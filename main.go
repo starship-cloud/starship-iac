@@ -17,8 +17,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/starship-io/starship-iac/cmd"
-	"github.com/starship-io/starship-iac/server/logging"
+	"github.com/startship-io/starship-iac/cmd"
+	"github.com/startship-io/starship-iac/server/logging"
 	"github.com/spf13/viper"
 )
 
