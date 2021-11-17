@@ -1,0 +1,24 @@
+# Note: This file is only used for starship local development
+#version: "3.8"
+#services:
+#    ngrok:
+#        image: wernight/ngrok:latest
+#        ports:
+#        - 4040:4040
+#        environment:
+#            NGROK_PROTOCOL: http
+#            NGROK_PORT: starship:4141
+#        depends_on:
+#        - starship
+#    starship:
+#        build:
+#            context: .
+#            dockerfile: Dockerfile.dev
+#        ports:
+#        - 4141:4141
+#        volumes:
+#            - ~/.ssh:/.ssh
+#            - ./:/starship/src
+#        # Contains the flags that starship uses in env var form
+#        env_file:
+#            - ./starship.env
