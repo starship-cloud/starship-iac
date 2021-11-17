@@ -9,7 +9,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-// Modified hereafter by contributors to runstarship/starship.
 
 // Package cmd provides all CLI commands.
 // NOTE: These are different from the commands that get run via pull request
