@@ -1,4 +1,4 @@
-module github.com/startship-io/starship-iac
+module github.com/starship-cloud/starship-iac
 
 go 1.17
 
