@@ -1,4 +1,4 @@
-module github.com/runatlantis/atlantis
+module github.com/startship-io/starship-iac
 
 go 1.17
 

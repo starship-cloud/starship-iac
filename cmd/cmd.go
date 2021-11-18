@@ -14,3 +14,9 @@
 // NOTE: These are different from the commands that get run via pull request
 // comments.
 package cmd
+
+import "fmt"
+
+func SayHi(){
+	fmt.Println("hello")
+}

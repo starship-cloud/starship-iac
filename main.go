@@ -16,35 +16,13 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/startship-io/starship-iac/cmd"
-	"github.com/startship-io/starship-iac/server/logging"
-	"github.com/spf13/viper"
+	//"github.com/spf13/viper"
 )
 
 const starshipVersion = "0.0.1"
 
 func main() {
-	v := viper.New()
-
-	logger, err := logging.NewStructuredLogger()
-
-	if err != nil {
-		panic(fmt.Sprintf("unable to initialize logger. %s", err.Error()))
-	}
-
-	// We're creating commands manually here rather than using init() functions
-	// (as recommended by cobra) because it makes testing easier.
-	server := &cmd.ServerCmd{
-		ServerCreator:   &cmd.DefaultServerCreator{},
-		Viper:           v,
-		AtlantisVersion: starshipVersion,
-		Logger:          logger,
-	}
-	version := &cmd.VersionCmd{AtlantisVersion: atlantisVersion}
-	testdrive := &cmd.TestdriveCmd{}
-	cmd.RootCmd.AddCommand(server.Init())
-	cmd.RootCmd.AddCommand(version.Init())
-	cmd.RootCmd.AddCommand(testdrive.Init())
-	cmd.Execute()
+	fmt.Println("hello world")
+	cmd.SayHi()
 }
