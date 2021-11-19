@@ -17,10 +17,14 @@ require (
 	github.com/kataras/iris/v12 v12.1.8
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moul/http2curl v1.0.0 // indirect
+	github.com/onsi/ginkgo v1.16.5 // indirect
+	github.com/onsi/gomega v1.17.0 // indirect
 	github.com/panjf2000/ants/v2 v2.4.6
 	github.com/petergtz/pegomock v2.9.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/runatlantis/atlantis v0.17.5
+	github.com/sergi/go-diff v1.2.0 // indirect
+	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.9.0
 	github.com/stretchr/testify v1.7.0
