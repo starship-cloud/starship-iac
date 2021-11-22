@@ -460,7 +460,7 @@ type ServerStarter interface {
 	Start() error
 }
 
-// NewServer returns the real Atlantis server object.
+// NewServer returns the real server object.
 func (d *DefaultServerCreator) NewServer(userConfig server.UserConfig, config server.Config) (ServerStarter, error) {
 	return server.NewServer(userConfig, config)
 }
@@ -469,8 +469,8 @@ func (d *DefaultServerCreator) NewServer(userConfig server.UserConfig, config se
 func (s *ServerCmd) Init() *cobra.Command {
 	c := &cobra.Command{
 		Use:           "server",
-		Short:         "Start the starship-iac server",
-		Long:          `Start the starship-iac server and listen for webhook calls.`,
+		Short:         "Start the Starship-IaC server",
+		Long:          `Start the Starship-IaC server and listen for webhook calls.`,
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		PreRunE: s.withErrPrint(func(cmd *cobra.Command, args []string) error {
@@ -483,7 +483,7 @@ func (s *ServerCmd) Init() *cobra.Command {
 
 	// Configure viper to accept env vars prefixed with ATLANTIS_ that can be
 	// used instead of flags.
-	s.Viper.SetEnvPrefix("ATLANTIS")
+	s.Viper.SetEnvPrefix("STARSHIP")
 	s.Viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	s.Viper.AutomaticEnv()
 	s.Viper.SetTypeByDefaultValue(true)

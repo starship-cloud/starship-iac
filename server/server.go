@@ -4,7 +4,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,7 +17,6 @@ import (
 	"time"
 
 	"github.com/mitchellh/go-homedir"
-	"github.com/runatlantis/atlantis/server/core/db"
 	"github.com/runatlantis/atlantis/server/events/yaml/valid"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
@@ -28,8 +26,6 @@ import (
 	events_controllers "github.com/runatlantis/atlantis/server/controllers/events"
 	"github.com/runatlantis/atlantis/server/controllers/templates"
 	"github.com/runatlantis/atlantis/server/core/locking"
-	"github.com/runatlantis/atlantis/server/events/models"
-	"github.com/runatlantis/atlantis/server/events/webhooks"
 	"github.com/runatlantis/atlantis/server/events/yaml"
 	"github.com/runatlantis/atlantis/server/static"
 	"github.com/starship-cloud/starship-iac/server/events"
@@ -117,23 +113,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, err
 	}
 
-	var supportedVCSHosts []models.VCSHostType
-	//var githubClient *vcs.GithubClient
-	////var githubAppEnabled bool
-	////var githubCredentials vcs.GithubCredentials
-	//var gitlabClient *vcs.GitlabClient
-	//var bitbucketCloudClient *bitbucketcloud.Client
-	//var bitbucketServerClient *bitbucketserver.Client
-	//var azuredevopsClient *vcs.AzureDevopsClient
-
-	//policyChecksEnabled := false
-	//if userConfig.EnablePolicyChecksFlag {
-	//	logger.Info("Policy Checks are enabled")
-	//	policyChecksEnabled = true
-	//}
-
 	if userConfig.GithubUser != "" || userConfig.GithubAppID != 0 {
-		supportedVCSHosts = append(supportedVCSHosts, models.Github)
 		if userConfig.GithubUser != "" {
 			//githubCredentials = &vcs.GithubUserCredentials{
 			//	User:  userConfig.GithubUser,
@@ -167,45 +147,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		//	return nil, err
 		//}
 	}
-	if userConfig.GitlabUser != "" {
-		//supportedVCSHosts = append(supportedVCSHosts, models.Gitlab)
-		//var err error
-		//gitlabClient, err = vcs.NewGitlabClient(userConfig.GitlabHostname, userConfig.GitlabToken, logger)
-		//if err != nil {
-		//	return nil, err
-		//}
-	}
-	//if userConfig.BitbucketUser != "" {
-	//	if userConfig.BitbucketBaseURL == bitbucketcloud.BaseURL {
-	//		supportedVCSHosts = append(supportedVCSHosts, models.BitbucketCloud)
-	//		bitbucketCloudClient = bitbucketcloud.NewClient(
-	//			http.DefaultClient,
-	//			userConfig.BitbucketUser,
-	//			userConfig.BitbucketToken,
-	//			userConfig.AtlantisURL)
-	//	} else {
-	//		supportedVCSHosts = append(supportedVCSHosts, models.BitbucketServer)
-	//		var err error
-	//		bitbucketServerClient, err = bitbucketserver.NewClient(
-	//			http.DefaultClient,
-	//			userConfig.BitbucketUser,
-	//			userConfig.BitbucketToken,
-	//			userConfig.BitbucketBaseURL,
-	//			userConfig.AtlantisURL)
-	//		if err != nil {
-	//			return nil, errors.Wrapf(err, "setting up Bitbucket Server client")
-	//		}
-	//	}
-	//}
-	//if userConfig.AzureDevopsUser != "" {
-	//	supportedVCSHosts = append(supportedVCSHosts, models.AzureDevops)
-	//
-	//	var err error
-	//	azuredevopsClient, err = vcs.NewAzureDevopsClient(userConfig.AzureDevOpsHostname, userConfig.AzureDevopsUser, userConfig.AzureDevopsToken)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
 
 	if userConfig.WriteGitCreds {
 		home, err := homedir.Dir()
@@ -223,120 +164,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			//	return nil, err
 			//}
 		}
-		if userConfig.BitbucketUser != "" {
-			// The default BitbucketBaseURL is https://api.bitbucket.org which can't actually be used for git
-			// so we override it here only if it's that to be bitbucket.org
-			bitbucketBaseURL := userConfig.BitbucketBaseURL
-			if bitbucketBaseURL == "https://api.bitbucket.org" {
-				bitbucketBaseURL = "bitbucket.org"
-			}
-			//if err := events.WriteGitCreds(userConfig.BitbucketUser, userConfig.BitbucketToken, bitbucketBaseURL, home, logger, false); err != nil {
-			//	return nil, err
-			//}
-		}
-		if userConfig.AzureDevopsUser != "" {
-			//if err := events.WriteGitCreds(userConfig.AzureDevopsUser, userConfig.AzureDevopsToken, "dev.azure.com", home, logger, false); err != nil {
-			//	return nil, err
-			//}
-		}
 	}
-
-	var webhooksConfig []webhooks.Config
-	for _, c := range userConfig.Webhooks {
-		config := webhooks.Config{
-			Channel:        c.Channel,
-			Event:          c.Event,
-			Kind:           c.Kind,
-			WorkspaceRegex: c.WorkspaceRegex,
-		}
-		webhooksConfig = append(webhooksConfig, config)
-	}
-	//webhooksManager, err := webhooks.NewMultiWebhookSender(webhooksConfig, webhooks.NewSlackClient(userConfig.SlackToken))
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "initializing webhooks")
-	//}
-	//vcsClient := vcs.NewClientProxy(githubClient, gitlabClient, bitbucketCloudClient, bitbucketServerClient, azuredevopsClient)
-	////commitStatusUpdater := &events.DefaultCommitStatusUpdater{Client: vcsClient, TitleBuilder: vcs.StatusTitleBuilder{TitlePrefix: userConfig.VCSStatusName}}
-	//
-	//binDir, err := mkSubDir(userConfig.DataDir, BinDirName)
-
-	if err != nil {
-		return nil, err
-	}
-
-	//cacheDir, err := mkSubDir(userConfig.DataDir, TerraformPluginCacheDirName)
-
-	if err != nil {
-		return nil, err
-	}
-
-	//terraformClient, err := terraform.NewClient(
-	//	logger,
-	//	binDir,
-	//	cacheDir,
-	//	userConfig.TFEToken,
-	//	userConfig.TFEHostname,
-	//	userConfig.DefaultTFVersion,
-	//	config.DefaultTFVersionFlag,
-	//	userConfig.TFDownloadURL,
-	//	&terraform.DefaultDownloader{},
-	//	true)
-	// The flag.Lookup call is to detect if we're running in a unit test. If we
-	// are, then we don't error out because we don't have/want terraform
-	// installed on our CI system where the unit tests run.
-	if err != nil && flag.Lookup("test.v") == nil {
-		return nil, errors.Wrap(err, "initializing terraform")
-	}
-	//markdownRenderer := &events.MarkdownRenderer{
-	//	GitlabSupportsCommonMark: gitlabClient.SupportsCommonMark(),
-	//	DisableApplyAll:          userConfig.DisableApplyAll,
-	//	DisableMarkdownFolding:   userConfig.DisableMarkdownFolding,
-	//	DisableApply:             userConfig.DisableApply,
-	//	DisableRepoLocking:       userConfig.DisableRepoLocking,
-	//	EnableDiffMarkdownFormat: userConfig.EnableDiffMarkdownFormat,
-	//}
-
-	boltdb, err := db.New(userConfig.DataDir)
-	if err != nil {
-		return nil, err
-	}
-	var lockingClient locking.Locker
-	var applyLockingClient locking.ApplyLocker
-	if userConfig.DisableRepoLocking {
-		lockingClient = locking.NewNoOpLocker()
-	} else {
-		lockingClient = locking.NewClient(boltdb)
-	}
-	applyLockingClient = locking.NewApplyClient(boltdb, userConfig.DisableApply)
-	//workingDirLocker := ""//events.NewDefaultWorkingDirLocker()
-
-	//var workingDir events.WorkingDir = &events.FileWorkspace{
-	//	DataDir:       userConfig.DataDir,
-	//	CheckoutMerge: userConfig.CheckoutStrategy == "merge",
-	//}
-	//// provide fresh tokens before clone from the GitHub Apps integration, proxy workingDir
-	//if githubAppEnabled {
-	//	if !userConfig.WriteGitCreds {
-	//		return nil, errors.New("Github App requires --write-git-creds to support cloning")
-	//	}
-	//	workingDir = &events.GithubAppWorkingDir{
-	//		WorkingDir:     workingDir,
-	//		Credentials:    githubCredentials,
-	//		GithubHostname: userConfig.GithubHostname,
-	//	}
-	//}
-	//
-	//projectLocker := &events.DefaultProjectLocker{
-	//	Locker:    lockingClient,
-	//	VCSClient: vcsClient,
-	//}
-	//deleteLockCommand := &events.DefaultDeleteLockCommand{
-	//	Locker:           lockingClient,
-	//	Logger:           logger,
-	//	WorkingDir:       workingDir,
-	//	WorkingDirLocker: workingDirLocker,
-	//	DB:               boltdb,
-	//}
 
 	parsedURL, err := ParseAtlantisURL(userConfig.AtlantisURL)
 	if err != nil {
@@ -647,12 +475,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Port:                          userConfig.Port,
 
 		Logger:                        logger,
-		Locker:                        lockingClient,
-		ApplyLocker:                   applyLockingClient,
-		//VCSEventsController:           eventsController,
-		//GithubAppController:           githubAppController,
-		//LocksController:               locksController,
-		//StatusController:              statusController,
 		IndexTemplate:                 templates.IndexTemplate,
 		LockDetailTemplate:            templates.LockTemplate,
 		SSLKeyFile:                    userConfig.SSLKeyFile,
