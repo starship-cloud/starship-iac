@@ -7,10 +7,6 @@ import (
 	"github.com/kataras/iris/v12"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
-	"github.com/runatlantis/atlantis/server/controllers"
-	"github.com/runatlantis/atlantis/server/controllers/templates"
-	"github.com/runatlantis/atlantis/server/events/yaml"
-	"github.com/runatlantis/atlantis/server/events/yaml/valid"
 	"github.com/starship-cloud/starship-iac/api"
 	"github.com/starship-cloud/starship-iac/server/events"
 	"github.com/starship-cloud/starship-iac/server/logging"
@@ -30,11 +26,11 @@ type Server struct {
 	StarshipURL                   *url.URL
 	Port                          int
 	Logger                        logging.SimpleLogging
-	GithubAppController           *controllers.GithubAppController
-	LocksController               *controllers.LocksController
-	StatusController              *controllers.StatusController
-	IndexTemplate                 templates.TemplateWriter
-	LockDetailTemplate            templates.TemplateWriter
+	//GithubAppController           *controllers.GithubAppController
+	//LocksController               *controllers.LocksController
+	//StatusController              *controllers.StatusController
+	//IndexTemplate                 templates.TemplateWriter
+	//LockDetailTemplate            templates.TemplateWriter
 	SSLCertFile                   string
 	SSLKeyFile                    string
 	SSLPort                       int
@@ -116,27 +112,26 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, errors.Wrapf(err,
 			"parsing --%s flag %q", config.StarshipURLFlag, userConfig.StarshipURL)
 	}
-	validator := &yaml.ParserValidator{}
 
-	globalCfg := valid.NewGlobalCfgFromArgs(
-		valid.GlobalCfgArgs{
-			AllowRepoCfg:       userConfig.AllowRepoConfig,
-			MergeableReq:       userConfig.RequireMergeable,
-			ApprovedReq:        userConfig.RequireApproval,
-			UnDivergedReq:      userConfig.RequireUnDiverged,
-			PolicyCheckEnabled: userConfig.EnablePolicyChecksFlag,
-		})
-	if userConfig.RepoConfig != "" {
-		globalCfg, err = validator.ParseGlobalCfg(userConfig.RepoConfig, globalCfg)
-		if err != nil {
-			return nil, errors.Wrapf(err, "parsing %s file", userConfig.RepoConfig)
-		}
-	} else if userConfig.RepoConfigJSON != "" {
-		globalCfg, err = validator.ParseGlobalCfgJSON(userConfig.RepoConfigJSON, globalCfg)
-		if err != nil {
-			return nil, errors.Wrapf(err, "parsing --%s", config.RepoConfigJSONFlag)
-		}
-	}
+	//globalCfg := valid.NewGlobalCfgFromArgs(
+	//	valid.GlobalCfgArgs{
+	//		AllowRepoCfg:       userConfig.AllowRepoConfig,
+	//		MergeableReq:       userConfig.RequireMergeable,
+	//		ApprovedReq:        userConfig.RequireApproval,
+	//		UnDivergedReq:      userConfig.RequireUnDiverged,
+	//		PolicyCheckEnabled: userConfig.EnablePolicyChecksFlag,
+	//	})
+	//if userConfig.RepoConfig != "" {
+	//	globalCfg, err = validator.ParseGlobalCfg(userConfig.RepoConfig, globalCfg)
+	//	if err != nil {
+	//		return nil, errors.Wrapf(err, "parsing %s file", userConfig.RepoConfig)
+	//	}
+	//} else if userConfig.RepoConfigJSON != "" {
+	//	globalCfg, err = validator.ParseGlobalCfgJSON(userConfig.RepoConfigJSON, globalCfg)
+	//	if err != nil {
+	//		return nil, errors.Wrapf(err, "parsing --%s", config.RepoConfigJSONFlag)
+	//	}
+	//}
 
 	drainer := &events.Drainer{}
 
@@ -145,8 +140,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		StarshipURL:                   parsedURL,
 		Port:                          userConfig.Port,
 		Logger:                        logger,
-		IndexTemplate:                 templates.IndexTemplate,
-		LockDetailTemplate:            templates.LockTemplate,
+		//IndexTemplate:                 templates.IndexTemplate,
+		//LockDetailTemplate:            templates.LockTemplate,
 		SSLKeyFile:                    userConfig.SSLKeyFile,
 		SSLCertFile:                   userConfig.SSLCertFile,
 		Drainer:                       drainer,
