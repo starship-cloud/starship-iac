@@ -9,13 +9,12 @@ import (
 	"log"
 )
 
-var app *iris.Application
-
-func Init(port string) {
-	app = iris.New()
+//var app *iris.Application
+func Init() *iris.Application{
+	app := iris.New()
 	app.Post("/apply", apply)
 	app.Post("/cancel", cancel)
-	app.Run(iris.Addr(":" + port))
+	return app
 }
 
 type RequestBody struct {

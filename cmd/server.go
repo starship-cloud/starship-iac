@@ -13,8 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	//	"github.com/runatlantis/atlantis/server/events/vcs/bitbucketcloud"
-	//	"github.com/runatlantis/atlantis/server/events/yaml/valid"
 	"github.com/starship-cloud/starship-iac/server"
 	"github.com/starship-cloud/starship-iac/server/logging"
 )
@@ -575,13 +573,6 @@ func (s *ServerCmd) run() error {
 	if err := s.setAtlantisURL(&userConfig); err != nil {
 		return err
 	}
-	/*
-	if err := s.setDataDir(&userConfig); err != nil {
-		return err
-	}
-	if err := s.deprecationWarnings(&userConfig); err != nil {
-		return err
-	}*/
 	s.securityWarnings(&userConfig)
 	s.trimAtSymbolFromUsers(&userConfig)
 

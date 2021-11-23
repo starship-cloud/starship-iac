@@ -3,68 +3,33 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log"
+	"github.com/kataras/iris/v12"
+	"github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
+	"github.com/runatlantis/atlantis/server/controllers"
+	"github.com/runatlantis/atlantis/server/controllers/templates"
+	"github.com/runatlantis/atlantis/server/events/yaml"
+	"github.com/runatlantis/atlantis/server/events/yaml/valid"
+	"github.com/starship-cloud/starship-iac/api"
+	"github.com/starship-cloud/starship-iac/server/events"
+	"github.com/starship-cloud/starship-iac/server/logging"
+	"github.com/urfave/cli"
 	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"sort"
 	"strings"
 	"syscall"
 	"time"
-
-	"github.com/mitchellh/go-homedir"
-	"github.com/runatlantis/atlantis/server/events/yaml/valid"
-
-	assetfs "github.com/elazarl/go-bindata-assetfs"
-	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
-	"github.com/runatlantis/atlantis/server/controllers"
-	events_controllers "github.com/runatlantis/atlantis/server/controllers/events"
-	"github.com/runatlantis/atlantis/server/controllers/templates"
-	"github.com/runatlantis/atlantis/server/core/locking"
-	"github.com/runatlantis/atlantis/server/events/yaml"
-	"github.com/runatlantis/atlantis/server/static"
-	"github.com/starship-cloud/starship-iac/server/events"
-	"github.com/starship-cloud/starship-iac/server/logging"
-	"github.com/urfave/cli"
-	"github.com/urfave/negroni"
-)
-
-const (
-	// LockViewRouteName is the named route in mux.Router for the lock view.
-	// The route can be retrieved by this name, ex:
-	//   mux.Router.Get(LockViewRouteName)
-	LockViewRouteName = "lock-detail"
-	// LockViewRouteIDQueryParam is the query parameter needed to construct the lock view
-	// route. ex:
-	//   mux.Router.Get(LockViewRouteName).URL(LockViewRouteIDQueryParam, "my id")
-	LockViewRouteIDQueryParam = "id"
-
-	// binDirName is the name of the directory inside our data dir where
-	// we download binaries.
-	BinDirName = "bin"
-
-	// terraformPluginCacheDir is the name of the dir inside our data dir
-	// where we tell terraform to cache plugins and modules.
-	TerraformPluginCacheDirName = "plugin-cache"
 )
 
 // Server runs the Atlantis web server.
 type Server struct {
-	AtlantisVersion               string
-	AtlantisURL                   *url.URL
-	Router                        *mux.Router
+	StarshipVersion               string
+	StarshipURL                   *url.URL
 	Port                          int
-	//PreWorkflowHooksCommandRunner *events.DefaultPreWorkflowHooksCommandRunner
-	//CommandRunner                 *events.DefaultCommandRunner
 	Logger                        logging.SimpleLogging
-	Locker                        locking.Locker
-	ApplyLocker                   locking.ApplyLocker
-	VCSEventsController           *events_controllers.VCSEventsController
 	GithubAppController           *controllers.GithubAppController
 	LocksController               *controllers.LocksController
 	StatusController              *controllers.StatusController
@@ -72,6 +37,7 @@ type Server struct {
 	LockDetailTemplate            templates.TemplateWriter
 	SSLCertFile                   string
 	SSLKeyFile                    string
+	SSLPort                       int
 	Drainer                       *events.Drainer
 	WebAuthentication             bool
 	WebUsername                   string
@@ -81,8 +47,8 @@ type Server struct {
 // Config holds config for server that isn't passed in by the user.
 type Config struct {
 	AllowForkPRsFlag        string
-	AtlantisURLFlag         string
-	AtlantisVersion         string
+	StarshipURLFlag         string
+	StarshipVersion         string
 	DefaultTFVersionFlag    string
 	RepoConfigJSONFlag      string
 	SilenceForkPRErrorsFlag string
@@ -120,25 +86,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			//	Token: userConfig.GithubToken,
 			//}
 		} else if userConfig.GithubAppID != 0 && userConfig.GithubAppKeyFile != "" {
-			/*privateKey, err := os.ReadFile(userConfig.GithubAppKeyFile)
-			if err != nil {
-				return nil, err
-			}
-			githubCredentials = &vcs.GithubAppCredentials{
-				AppID:    userConfig.GithubAppID,
-				Key:      privateKey,
-				Hostname: userConfig.GithubHostname,
-				AppSlug:  userConfig.GithubAppSlug,
-			}*/
-			//githubAppEnabled = true
 		} else if userConfig.GithubAppID != 0 && userConfig.GithubAppKey != "" {
-			//githubCredentials = &vcs.GithubAppCredentials{
-			//	AppID:    userConfig.GithubAppID,
-			//	Key:      []byte(userConfig.GithubAppKey),
-			//	Hostname: userConfig.GithubHostname,
-			//	AppSlug:  userConfig.GithubAppSlug,
-			//}
-			//githubAppEnabled = true
 		}
 
 		//var err error
@@ -160,16 +108,13 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			fmt.Println(home)
 		}
 		if userConfig.GitlabUser != "" {
-			//if err := events.WriteGitCreds(userConfig.GitlabUser, userConfig.GitlabToken, userConfig.GitlabHostname, home, logger, false); err != nil {
-			//	return nil, err
-			//}
 		}
 	}
 
-	parsedURL, err := ParseAtlantisURL(userConfig.AtlantisURL)
+	parsedURL, err := ParseURL(userConfig.StarshipURL)
 	if err != nil {
 		return nil, errors.Wrapf(err,
-			"parsing --%s flag %q", config.AtlantisURLFlag, userConfig.AtlantisURL)
+			"parsing --%s flag %q", config.StarshipURLFlag, userConfig.StarshipURL)
 	}
 	validator := &yaml.ParserValidator{}
 
@@ -193,16 +138,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		}
 	}
 
-	underlyingRouter := mux.NewRouter()
-
 	drainer := &events.Drainer{}
 
 	return &Server{
-		AtlantisVersion:               config.AtlantisVersion,
-		AtlantisURL:                   parsedURL,
-		Router:                        underlyingRouter,
+		StarshipVersion:               config.StarshipVersion,
+		StarshipURL:                   parsedURL,
 		Port:                          userConfig.Port,
-
 		Logger:                        logger,
 		IndexTemplate:                 templates.IndexTemplate,
 		LockDetailTemplate:            templates.LockTemplate,
@@ -215,30 +156,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}, nil
 }
 
-// Start creates the routes and starts serving traffic.
 func (s *Server) Start() error {
-	s.Router.HandleFunc("/", s.Index).Methods("GET").MatcherFunc(func(r *http.Request, rm *mux.RouteMatch) bool {
-		return r.URL.Path == "/" || r.URL.Path == "/index.html"
-	})
-	s.Router.HandleFunc("/healthz", s.Healthz).Methods("GET")
-	s.Router.HandleFunc("/status", s.StatusController.Get).Methods("GET")
-	s.Router.PathPrefix("/static/").Handler(http.FileServer(&assetfs.AssetFS{Asset: static.Asset, AssetDir: static.AssetDir, AssetInfo: static.AssetInfo}))
-	s.Router.HandleFunc("/events", s.VCSEventsController.Post).Methods("POST")
-	s.Router.HandleFunc("/github-app/exchange-code", s.GithubAppController.ExchangeCode).Methods("GET")
-	s.Router.HandleFunc("/github-app/setup", s.GithubAppController.New).Methods("GET")
-	s.Router.HandleFunc("/apply/lock", s.LocksController.LockApply).Methods("POST").Queries()
-	s.Router.HandleFunc("/apply/unlock", s.LocksController.UnlockApply).Methods("DELETE").Queries()
-	s.Router.HandleFunc("/locks", s.LocksController.DeleteLock).Methods("DELETE").Queries("id", "{id:.*}")
-	s.Router.HandleFunc("/lock", s.LocksController.GetLock).Methods("GET").
-		Queries(LockViewRouteIDQueryParam, fmt.Sprintf("{%s}", LockViewRouteIDQueryParam)).Name(LockViewRouteName)
-	n := negroni.New(&negroni.Recovery{
-		Logger:     log.New(os.Stdout, "", log.LstdFlags),
-		PrintStack: false,
-		StackAll:   false,
-		StackSize:  1024 * 8,
-	}, NewRequestLogger(s))
-	n.UseHandler(s.Router)
-
 	defer s.Logger.Flush()
 
 	// Ensure server gracefully drains connections when stopped.
@@ -246,15 +164,16 @@ func (s *Server) Start() error {
 	// Stop on SIGINTs and SIGTERMs.
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	server := &http.Server{Addr: fmt.Sprintf(":%d", s.Port), Handler: n}
+	app := api.Init()
+
 	go func() {
-		s.Logger.Info("Atlantis started - listening on port %v", s.Port)
+		s.Logger.Info("Starship-IaC started - listening on port %v", s.Port)
 
 		var err error
 		if s.SSLCertFile != "" && s.SSLKeyFile != "" {
-			err = server.ListenAndServeTLS(s.SSLCertFile, s.SSLKeyFile)
+			err = app.Run(iris.TLS(":" + string(s.SSLPort), s.SSLCertFile, s.SSLKeyFile))
 		} else {
-			err = server.ListenAndServe()
+			err = app.Run(iris.Addr(":" + string(s.Port)))
 		}
 
 		if err != nil && err != http.ErrServerClosed {
@@ -266,7 +185,8 @@ func (s *Server) Start() error {
 	s.Logger.Warn("Received interrupt. Waiting for in-progress operations to complete")
 	s.waitForDrain()
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second) // nolint: vet
-	if err := server.Shutdown(ctx); err != nil {
+
+	if err := app.Shutdown(ctx); err != nil {
 		return cli.NewExitError(fmt.Sprintf("while shutting down: %s", err), 1)
 	}
 	return nil
@@ -291,88 +211,27 @@ func (s *Server) waitForDrain() {
 	}
 }
 
-// Index is the / route.
-func (s *Server) Index(w http.ResponseWriter, _ *http.Request) {
-	locks, err := s.Locker.List()
-	if err != nil {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		fmt.Fprintf(w, "Could not retrieve locks: %s", err)
-		return
-	}
-
-	var lockResults []templates.LockIndexData
-	for id, v := range locks {
-		lockURL, _ := s.Router.Get(LockViewRouteName).URL("id", url.QueryEscape(id))
-		lockResults = append(lockResults, templates.LockIndexData{
-			// NOTE: must use .String() instead of .Path because we need the
-			// query params as part of the lock URL.
-			LockPath:      lockURL.String(),
-			RepoFullName:  v.Project.RepoFullName,
-			PullNum:       v.Pull.Num,
-			Path:          v.Project.Path,
-			Workspace:     v.Workspace,
-			Time:          v.Time,
-			TimeFormatted: v.Time.Format("02-01-2006 15:04:05"),
-		})
-	}
-
-	applyCmdLock, err := s.ApplyLocker.CheckApplyLock()
-	s.Logger.Info("Apply Lock: %v", applyCmdLock)
-	if err != nil {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		fmt.Fprintf(w, "Could not retrieve global apply lock: %s", err)
-		return
-	}
-
-	applyLockData := templates.ApplyLockData{
-		Time:          applyCmdLock.Time,
-		Locked:        applyCmdLock.Locked,
-		TimeFormatted: applyCmdLock.Time.Format("02-01-2006 15:04:05"),
-	}
-	//Sort by date - newest to oldest.
-	sort.SliceStable(lockResults, func(i, j int) bool { return lockResults[i].Time.After(lockResults[j].Time) })
-
-	err = s.IndexTemplate.Execute(w, templates.IndexData{
-		Locks:           lockResults,
-		ApplyLock:       applyLockData,
-		AtlantisVersion: s.AtlantisVersion,
-		CleanedBasePath: s.AtlantisURL.Path,
-	})
-	if err != nil {
-		s.Logger.Err(err.Error())
-	}
-}
-
-func mkSubDir(parentDir string, subDir string) (string, error) {
-	fullDir := filepath.Join(parentDir, subDir)
-	if err := os.MkdirAll(fullDir, 0700); err != nil {
-		return "", errors.Wrapf(err, "unable to create dir %q", fullDir)
-	}
-
-	return fullDir, nil
-}
-
 // Healthz returns the health check response. It always returns a 200 currently.
-func (s *Server) Healthz(w http.ResponseWriter, _ *http.Request) {
-	data, err := json.MarshalIndent(&struct {
-		Status string `json:"status"`
-	}{
-		Status: "ok",
-	}, "", "  ")
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error creating status json response: %s", err)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data) // nolint: errcheck
-}
+//func (s *Server) Healthz(w http.ResponseWriter, _ *http.Request) {
+//	data, err := json.MarshalIndent(&struct {
+//		Status string `json:"status"`
+//	}{
+//		Status: "ok",
+//	}, "", "  ")
+//	if err != nil {
+//		w.WriteHeader(http.StatusInternalServerError)
+//		fmt.Fprintf(w, "Error creating status json response: %s", err)
+//		return
+//	}
+//	w.Header().Set("Content-Type", "application/json")
+//	w.Write(data) // nolint: errcheck
+//}
 
-// ParseAtlantisURL parses the user-passed atlantis URL to ensure it is valid
+// ParseURL parses the user-passed atlantis URL to ensure it is valid
 // and we can use it in our templates.
 // It removes any trailing slashes from the path so we can concatenate it
 // with other paths without checking.
-func ParseAtlantisURL(u string) (*url.URL, error) {
+func ParseURL(u string) (*url.URL, error) {
 	parsed, err := url.Parse(u)
 	if err != nil {
 		return nil, err

@@ -10,7 +10,7 @@ import (
 type UserConfig struct {
 	AllowForkPRs               bool   `mapstructure:"allow-fork-prs"`
 	AllowRepoConfig            bool   `mapstructure:"allow-repo-config"`
-	AtlantisURL                string `mapstructure:"atlantis-url"`
+	StarshipURL                string `mapstructure:"starship-url"`
 	Automerge                  bool   `mapstructure:"automerge"`
 	AutoplanFileList           string `mapstructure:"autoplan-file-list"`
 	AzureDevopsToken           string `mapstructure:"azuredevops-token"`
@@ -62,7 +62,7 @@ type UserConfig struct {
 	// RequireMergeable is whether to require pull requests to be mergeable before
 	// allowing terraform apply's to run.
 	RequireMergeable bool `mapstructure:"require-mergeable"`
-	// SilenceNoProjects is whether Atlantis should respond to a PR if no projects are found.
+	// SilenceNoProjects is whether starship should respond to a PR if no projects are found.
 	SilenceNoProjects bool `mapstructure:"silence-no-projects"`
 	// RequireUnDiverged is whether to require pull requests to rebase default branch before
 	// allowing terraform apply's to run.
