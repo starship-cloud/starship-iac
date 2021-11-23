@@ -30,7 +30,7 @@ const (
 	ADHostnameFlag             = "azuredevops-hostname"
 	AllowForkPRsFlag           = "allow-fork-prs"
 	AllowRepoConfigFlag        = "allow-repo-config"
-	AtlantisURLFlag            = "atlantis-url"
+	StarshipURLFlag            = "atlantis-url"
 	AutomergeFlag              = "automerge"
 	AutoplanFileListFlag       = "autoplan-file-list"
 	BitbucketBaseURLFlag       = "bitbucket-base-url"
@@ -104,7 +104,8 @@ const (
 	DefaultGitlabHostname   = "gitlab.com"
 	DefaultLogLevel         = "info"
 	DefaultParallelPoolSize = 15
-	DefaultPort             = 4141
+	DefaultPort             = 8080
+	DefaultSSLPort          = 8443
 	DefaultTFDownloadURL    = "https://releases.hashicorp.com"
 	DefaultTFEHostname      = "app.terraform.io"
 	DefaultVCSStatusName    = "atlantis"
@@ -136,7 +137,7 @@ var stringFlags = map[string]stringFlag{
 		description:  "Azure DevOps hostname to support cloud and self hosted instances.",
 		defaultValue: "dev.azure.com",
 	},
-	AtlantisURLFlag: {
+	StarshipURLFlag: {
 		description: "URL that Atlantis can be reached at. Defaults to http://$(hostname):$port where $port is from --" + PortFlag + ". Supports a base path ex. https://example.com/basepath.",
 	},
 	AutoplanFileListFlag: {
@@ -570,7 +571,7 @@ func (s *ServerCmd) run() error {
 	if err := s.validate(userConfig); err != nil {
 		return err
 	}
-	if err := s.setAtlantisURL(&userConfig); err != nil {
+	if err := s.setStarshipURL(&userConfig); err != nil {
 		return err
 	}
 	s.securityWarnings(&userConfig)
@@ -579,8 +580,8 @@ func (s *ServerCmd) run() error {
 	// Config looks good. Start the server.
 	server, err := s.ServerCreator.NewServer(userConfig, server.Config{
 		AllowForkPRsFlag:        AllowForkPRsFlag,
-		AtlantisURLFlag:         AtlantisURLFlag,
-		AtlantisVersion:         s.StarshipVersion,
+		StarshipURLFlag:         StarshipURLFlag,
+		StarshipVersion:         s.StarshipVersion,
 		DefaultTFVersionFlag:    DefaultTFVersionFlag,
 		RepoConfigJSONFlag:      RepoConfigJSONFlag,
 		SilenceForkPRErrorsFlag: SilenceForkPRErrorsFlag,
@@ -621,6 +622,9 @@ func (s *ServerCmd) setDefaults(c *server.UserConfig) {
 	}
 	if c.Port == 0 {
 		c.Port = DefaultPort
+	}
+	if c.SSLPort == 0{
+		c.SSLPort = DefaultSSLPort
 	}
 	if c.TFDownloadURL == "" {
 		c.TFDownloadURL = DefaultTFDownloadURL
@@ -736,14 +740,14 @@ func (s *ServerCmd) validate(userConfig server.UserConfig) error {
 	return nil
 }
 
-// setAtlantisURL sets the externally accessible URL for atlantis.
-func (s *ServerCmd) setAtlantisURL(userConfig *server.UserConfig) error {
-	if userConfig.AtlantisURL == "" {
+// setStarshipURL sets the externally accessible URL for atlantis.
+func (s *ServerCmd) setStarshipURL(userConfig *server.UserConfig) error {
+	if userConfig.StarshipURL == "" {
 		hostname, err := os.Hostname()
 		if err != nil {
 			return errors.Wrap(err, "failed to determine hostname")
 		}
-		userConfig.AtlantisURL = fmt.Sprintf("http://%s:%d", hostname, userConfig.Port)
+		userConfig.StarshipURL = fmt.Sprintf("http://%s:%d", hostname, userConfig.Port)
 	}
 	return nil
 }

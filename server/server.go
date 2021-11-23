@@ -140,8 +140,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		StarshipURL:                   parsedURL,
 		Port:                          userConfig.Port,
 		Logger:                        logger,
-		//IndexTemplate:                 templates.IndexTemplate,
-		//LockDetailTemplate:            templates.LockTemplate,
 		SSLKeyFile:                    userConfig.SSLKeyFile,
 		SSLCertFile:                   userConfig.SSLCertFile,
 		Drainer:                       drainer,
