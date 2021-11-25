@@ -7,4 +7,6 @@ const (
 	MongoDBPassword      = "123456"
 	MaxConnection        = 200
 	RootCmdLogPath       = "/logs/cmd/"
+
+	RootSecret = "starship"
 )
