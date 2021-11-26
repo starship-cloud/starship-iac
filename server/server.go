@@ -8,12 +8,11 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/runatlantis/atlantis/server/controllers/templates"
-	"github.com/starship-cloud/starship-iac/api"
-	"github.com/starship-cloud/starship-iac/server/events"
-	"github.com/starship-cloud/starship-iac/server/logging"
 	"github.com/starship-cloud/starship-iac/server/controller"
 	"github.com/starship-cloud/starship-iac/server/core/db"
 	"github.com/starship-cloud/starship-iac/server/core/locking"
+	"github.com/starship-cloud/starship-iac/server/events"
+	"github.com/starship-cloud/starship-iac/server/logging"
 	"github.com/urfave/cli"
 	"net/http"
 	"net/url"
@@ -32,9 +31,9 @@ type Server struct {
 	Logger                        logging.SimpleLogging
 	//GithubAppController           *controllers.GithubAppController
 	//LocksController               *controllers.LocksController
-	//StatusController              *controllers.StatusController
 	//IndexTemplate                 templates.TemplateWriter
 	//LockDetailTemplate            templates.TemplateWriter
+	App                           *iris.Application
 	LocksController               *controllers.LocksController
 	StatusController              *controllers.StatusController
 	SSLCertFile                   string
@@ -119,8 +118,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			"parsing --%s flag %q", config.StarshipURLFlag, userConfig.StarshipURL)
 	}
 
-
-
 	boltdb, err := db.New(userConfig.DataDir)
 	if err != nil {
 		return nil, err
@@ -159,6 +156,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		DeleteLockCommand:  deleteLockCommand,
 	}
 
+	app := iris.New()
 
 	if err != nil {
 		return nil, err
@@ -178,6 +176,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		WebUsername:                   userConfig.WebUsername,
 		WebPassword:                   userConfig.WebPassword,
 		LocksController:               locksController,
+		App:                           app,
 	}, nil
 }
 
@@ -189,16 +188,19 @@ func (s *Server) Start() error {
 	// Stop on SIGINTs and SIGTERMs.
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	app := api.Init()
+	s.App.Get ("/status", s.StatusController.Status)
+	s.App.Post("/apply",  s.StatusController.Status)
+
+	//s.App.Post("/cancel", cancel)
 
 	go func() {
 		s.Logger.Info("Starship-IaC started - listening on port %v", s.Port)
 
 		var err error
 		if s.SSLCertFile != "" && s.SSLKeyFile != "" {
-			err = app.Run(iris.TLS(":" + string(s.SSLPort), s.SSLCertFile, s.SSLKeyFile))
+			err = s.App.Run(iris.TLS(":" + string(s.SSLPort), s.SSLCertFile, s.SSLKeyFile))
 		} else {
-			err = app.Run(iris.Addr(":" + string(s.Port)))
+			err = s.App.Run(iris.Addr(":" + string(s.Port)))
 		}
 
 		if err != nil && err != http.ErrServerClosed {
@@ -211,7 +213,7 @@ func (s *Server) Start() error {
 	s.waitForDrain()
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second) // nolint: vet
 
-	if err := app.Shutdown(ctx); err != nil {
+	if err := s.App.Shutdown(ctx); err != nil {
 		return cli.NewExitError(fmt.Sprintf("while shutting down: %s", err), 1)
 	}
 	return nil

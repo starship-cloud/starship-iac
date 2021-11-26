@@ -3,10 +3,16 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kataras/iris/v12"
 	"github.com/starship-cloud/starship-iac/server/events"
 	"github.com/starship-cloud/starship-iac/server/logging"
-	"net/http"
 )
+
+type RequestBody struct {
+	Key     string   `json:"key"`
+	Command string   `json:"command"`
+	Params  []string `json:"params"`
+}
 
 // StatusController handles the status of Atlantis.
 type StatusController struct {
@@ -19,18 +25,19 @@ type StatusResponse struct {
 	InProgressOps int  `json:"in_progress_operations"`
 }
 
-// Get is the GET /status route.
-func (d *StatusController) Get(w http.ResponseWriter, r *http.Request) {
+func (d *StatusController) Status(ctx iris.Context) int {
 	status := d.Drainer.GetStatus()
 	data, err := json.MarshalIndent(&StatusResponse{
 		ShuttingDown:  status.ShuttingDown,
 		InProgressOps: status.InProgressOps,
 	}, "", "  ")
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error creating status json response: %s", err)
-		return
+		d.Logger.Info(fmt.Sprintf("Error creating status json response: %s", err))
+		return iris.StatusInternalServerError
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data) // nolint: errcheck
+
+	ctx.Header("Content-Type", "application/json")
+	ctx.JSON(data)
+
+	return iris.StatusOK
 }
