@@ -16,7 +16,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
-	"github.com/runatlantis/atlantis/server/logging"
+	"github.com/starship-cloud/starship-iac/server/logging"
 )
 
 //go:generate pegomock generate -m --use-experimental-model-gen --package mocks -o mocks/mock_terraform_client.go Client

@@ -7,9 +7,13 @@ import (
 	"github.com/kataras/iris/v12"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
+	"github.com/runatlantis/atlantis/server/controllers/templates"
 	"github.com/starship-cloud/starship-iac/api"
 	"github.com/starship-cloud/starship-iac/server/events"
 	"github.com/starship-cloud/starship-iac/server/logging"
+	"github.com/starship-cloud/starship-iac/server/controller"
+	"github.com/starship-cloud/starship-iac/server/core/db"
+	"github.com/starship-cloud/starship-iac/server/core/locking"
 	"github.com/urfave/cli"
 	"net/http"
 	"net/url"
@@ -31,6 +35,8 @@ type Server struct {
 	//StatusController              *controllers.StatusController
 	//IndexTemplate                 templates.TemplateWriter
 	//LockDetailTemplate            templates.TemplateWriter
+	LocksController               *controllers.LocksController
+	StatusController              *controllers.StatusController
 	SSLCertFile                   string
 	SSLKeyFile                    string
 	SSLPort                       int
@@ -113,25 +119,50 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			"parsing --%s flag %q", config.StarshipURLFlag, userConfig.StarshipURL)
 	}
 
-	//globalCfg := valid.NewGlobalCfgFromArgs(
-	//	valid.GlobalCfgArgs{
-	//		AllowRepoCfg:       userConfig.AllowRepoConfig,
-	//		MergeableReq:       userConfig.RequireMergeable,
-	//		ApprovedReq:        userConfig.RequireApproval,
-	//		UnDivergedReq:      userConfig.RequireUnDiverged,
-	//		PolicyCheckEnabled: userConfig.EnablePolicyChecksFlag,
-	//	})
-	//if userConfig.RepoConfig != "" {
-	//	globalCfg, err = validator.ParseGlobalCfg(userConfig.RepoConfig, globalCfg)
-	//	if err != nil {
-	//		return nil, errors.Wrapf(err, "parsing %s file", userConfig.RepoConfig)
-	//	}
-	//} else if userConfig.RepoConfigJSON != "" {
-	//	globalCfg, err = validator.ParseGlobalCfgJSON(userConfig.RepoConfigJSON, globalCfg)
-	//	if err != nil {
-	//		return nil, errors.Wrapf(err, "parsing --%s", config.RepoConfigJSONFlag)
-	//	}
-	//}
+
+
+	boltdb, err := db.New(userConfig.DataDir)
+	if err != nil {
+		return nil, err
+	}
+	var lockingClient locking.Locker
+	var applyLockingClient locking.ApplyLocker
+	if userConfig.DisableRepoLocking {
+		lockingClient = locking.NewNoOpLocker()
+	} else {
+		lockingClient = locking.NewClient(boltdb)
+	}
+	applyLockingClient = locking.NewApplyClient(boltdb, userConfig.DisableApply)
+	workingDirLocker := events.NewDefaultWorkingDirLocker()
+
+	var workingDir events.WorkingDir = &events.FileWorkspace{
+		DataDir:       userConfig.DataDir,
+		CheckoutMerge: userConfig.CheckoutStrategy == "merge",
+	}
+
+	deleteLockCommand := &events.DefaultDeleteLockCommand{
+		Locker:           lockingClient,
+		Logger:           logger,
+		WorkingDir:       workingDir,
+		WorkingDirLocker: workingDirLocker,
+		DB:               boltdb,
+	}
+
+	locksController := &controllers.LocksController{
+		Locker:             lockingClient,
+		ApplyLocker:        applyLockingClient,
+		Logger:             logger,
+		LockDetailTemplate: templates.LockTemplate,
+		WorkingDir:         workingDir,
+		WorkingDirLocker:   workingDirLocker,
+		DB:                 boltdb,
+		DeleteLockCommand:  deleteLockCommand,
+	}
+
+
+	if err != nil {
+		return nil, err
+	}
 
 	drainer := &events.Drainer{}
 
@@ -146,6 +177,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		WebAuthentication:             userConfig.WebBasicAuth,
 		WebUsername:                   userConfig.WebUsername,
 		WebPassword:                   userConfig.WebPassword,
+		LocksController:               locksController,
 	}, nil
 }
 
@@ -203,7 +235,7 @@ func (s *Server) waitForDrain() {
 		}
 	}
 }
-
+//TODO
 // Healthz returns the health check response. It always returns a 200 currently.
 //func (s *Server) Healthz(w http.ResponseWriter, _ *http.Request) {
 //	data, err := json.MarshalIndent(&struct {

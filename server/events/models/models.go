@@ -8,12 +8,9 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
+	"github.com/pkg/errors"
 	"github.com/hashicorp/go-version"
 	"github.com/starship-cloud/starship-iac/server/logging"
-
-	"github.com/pkg/errors"
-	//"github.com/starship-cloud/starship-iac/server/events/yaml/valid"
 )
 
 const (

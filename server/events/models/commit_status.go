@@ -1,6 +1,6 @@
 package models
 
-// CommitStatus is the result of executing an Atlantis command for the commit.
+// CommitStatus is the result of executing an Starship-IaC command for the commit.
 // In Github the options are: error, failure, pending, success.
 // In Gitlab the options are: failed, canceled, pending, running, success.
 // We only support Failed, Pending, Success.

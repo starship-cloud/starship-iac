@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	version "github.com/hashicorp/go-version"
-	"github.com/runatlantis/atlantis/server/logging"
-	. "github.com/runatlantis/atlantis/testing"
+	"github.com/starship-cloud/starship-iac/server/logging"
+	. "github.com/starship-cloud/starship-iac/testing"
 )
 
 // Test that we write the file as expected
