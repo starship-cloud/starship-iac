@@ -27,7 +27,10 @@ type Student struct {
 }
 
 func Test_Insert(t *testing.T) {
-	Init()
+	err := Init()
+	if err != nil {
+		return
+	}
 
 	data := Student{
 		Name:   "tom",
@@ -40,7 +43,10 @@ func Test_Insert(t *testing.T) {
 }
 
 func Test_GetOne(t *testing.T) {
-	Init()
+	err := Init()
+	if err != nil {
+		return
+	}
 
 	filter := bson.M{"name": "tom"}
 	result := GetOne(filter)
@@ -50,7 +56,10 @@ func Test_GetOne(t *testing.T) {
 }
 
 func Test_UpdateOrSave(t *testing.T) {
-	Init()
+	err := Init()
+	if err != nil {
+		return
+	}
 
 	data := Student{
 		Name:   "jerry",
@@ -64,13 +73,19 @@ func Test_UpdateOrSave(t *testing.T) {
 }
 
 func Test_GetList(t *testing.T) {
-	Init()
+	err := Init()
+	if err != nil {
+		return
+	}
 	result := GetList(bson.M{})
 	fmt.Println(result)
 }
 
 func Test_Delete(t *testing.T) {
-	Init()
+	err := Init()
+	if err != nil {
+		return
+	}
 	filter := bson.M{"name": "tom"}
 
 	result := Delete(filter)

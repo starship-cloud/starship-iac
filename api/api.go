@@ -1,26 +1,72 @@
 package api
 
 import (
+	"github.com/iris-contrib/middleware/jwt"
 	"github.com/kataras/iris/v12"
 	"github.com/starship-cloud/starship-iac/cmd"
 	"github.com/starship-cloud/starship-iac/file"
 	"github.com/starship-cloud/starship-iac/taskpool"
 	"github.com/starship-cloud/starship-iac/utils"
 	"log"
+	"time"
 )
 
-//var app *iris.Application
-func Init() *iris.Application{
+type RequestBody struct {
+	Key     string   `json:"key"`
+	Command string   `json:"command"`
+	Params  []string `json:"params"`
+}
+
+var jwtMiddleware = jwt.New(jwt.Config{
+	ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
+		return []byte(utils.RootSecret), nil
+	},
+	Expiration:    true,
+	Extractor:     jwt.FromParameter("token"),
+	SigningMethod: jwt.SigningMethodHS256,
+})
+
+func Init() *iris.Application {
 	app := iris.New()
 	app.Post("/apply", apply)
 	app.Post("/cancel", cancel)
 	return app
 }
 
-type RequestBody struct {
-	Key     string   `json:"key"`
-	Command string   `json:"command"`
-	Params  []string `json:"params"`
+func createToken(userId string) (string, error) {
+	now := time.Now()
+	token := jwt.NewTokenWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userId": userId,
+		"iat":    now.Unix(),
+		"exp":    now.Add(15 * time.Minute).Unix(),
+	})
+
+	return token.SignedString([]byte(utils.RootSecret))
+}
+
+func checkToken(userId string, ctx iris.Context) (string, bool) {
+	if err := jwtMiddleware.CheckJWT(ctx); err != nil {
+		jwtMiddleware.Config.ErrorHandler(ctx, err)
+		return "", false
+	}
+
+	token := ctx.Values().Get("jwt").(*jwt.Token)
+	tokenInfo := token.Claims.(jwt.MapClaims)
+	if userId != tokenInfo["userId"] {
+		return "", false
+	}
+	if time.Now().Unix() > int64(tokenInfo["exp"].(float64)) {
+		//token timeout
+		return "", false
+	} else {
+		//update token
+		if int64(tokenInfo["exp"].(float64))-time.Now().Unix() < 30 {
+			newToken, _ := createToken(userId)
+			return newToken, true
+		}
+	}
+	oldToken, _ := token.SignedString([]byte(utils.RootSecret))
+	return oldToken, true
 }
 
 func apply(ctx iris.Context) {
