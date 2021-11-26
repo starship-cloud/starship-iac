@@ -25,19 +25,19 @@ type StatusResponse struct {
 	InProgressOps int  `json:"in_progress_operations"`
 }
 
-func (d *StatusController) Status(ctx iris.Context) int {
+func (d *StatusController) Status(ctx iris.Context) {
 	status := d.Drainer.GetStatus()
 	data, err := json.MarshalIndent(&StatusResponse{
 		ShuttingDown:  status.ShuttingDown,
 		InProgressOps: status.InProgressOps,
 	}, "", "  ")
 	if err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
 		d.Logger.Info(fmt.Sprintf("Error creating status json response: %s", err))
-		return iris.StatusInternalServerError
+		return
 	}
 
+	ctx.StatusCode(iris.StatusOK)
 	ctx.Header("Content-Type", "application/json")
 	ctx.JSON(data)
-
-	return iris.StatusOK
 }

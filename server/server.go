@@ -189,9 +189,6 @@ func (s *Server) Start() error {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	s.App.Get ("/status", s.StatusController.Status)
-	s.App.Post("/apply",  s.StatusController.Status)
-
-	//s.App.Post("/cancel", cancel)
 
 	go func() {
 		s.Logger.Info("Starship-IaC started - listening on port %v", s.Port)
