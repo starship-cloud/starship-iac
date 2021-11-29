@@ -25,19 +25,18 @@ import (
 
 // Server runs the Atlantis web server.
 type Server struct {
-	StarshipVersion               string
-	StarshipURL                   *url.URL
 	Port                          int
 	Logger                        logging.SimpleLogging
 	//GithubAppController           *controllers.GithubAppController
 	//LocksController               *controllers.LocksController
-	//IndexTemplate                 templates.TemplateWriter
-	//LockDetailTemplate            templates.TemplateWriter
+
 	App                           *iris.Application
 	LocksController               *controllers.LocksController
 	StatusController              *controllers.StatusController
 	UsersController               *controllers.UsersController
 	AdminController               *controllers.AdminController
+	LoginController               *controllers.LoginController
+
 	SSLCertFile                   string
 	SSLKeyFile                    string
 	SSLPort                       int
@@ -114,12 +113,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		}
 	}
 
-	parsedURL, err := ParseURL(userConfig.StarshipURL)
-	if err != nil {
-		return nil, errors.Wrapf(err,
-			"parsing --%s flag %q", config.StarshipURLFlag, userConfig.StarshipURL)
-	}
-
 	boltdb, err := db.New(userConfig.DataDir)
 	if err != nil {
 		return nil, err
@@ -167,8 +160,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	drainer := &events.Drainer{}
 
 	return &Server{
-		StarshipVersion:               config.StarshipVersion,
-		StarshipURL:                   parsedURL,
 		Port:                          userConfig.Port,
 		Logger:                        logger,
 		SSLKeyFile:                    userConfig.SSLKeyFile,
@@ -182,10 +173,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) ControllerInitialize(){
+func (s *Server) ControllersInitialize(){
 	s.App.Get ("/api/v1/status", s.StatusController.Status)
 	s.App.Get ("/api/v1/users/{userId:string}", s.UsersController.Users)
 	s.App.Get ("/api/v1/admin/users", s.AdminController.Users)
+	s.App.Post("/api/v1/login", s.LoginController.Login)
+	s.App.Post("/api/v1/logout", s.LoginController.Logout)
 }
 
 func (s *Server) Start() error {
@@ -196,7 +189,7 @@ func (s *Server) Start() error {
 	// Stop on SIGINTs and SIGTERMs.
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	s.ControllerInitialize()
+	s.ControllersInitialize()
 
 	go func() {
 		s.Logger.Info("Starship-IaC started - listening on port %v", s.Port)
