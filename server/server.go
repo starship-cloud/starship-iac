@@ -36,6 +36,8 @@ type Server struct {
 	App                           *iris.Application
 	LocksController               *controllers.LocksController
 	StatusController              *controllers.StatusController
+	UsersController               *controllers.UsersController
+	AdminController               *controllers.AdminController
 	SSLCertFile                   string
 	SSLKeyFile                    string
 	SSLPort                       int
@@ -180,6 +182,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}, nil
 }
 
+func (s *Server) ControllerInitialize(){
+	s.App.Get ("/api/v1/status", s.StatusController.Status)
+	s.App.Get ("/api/v1/users/{userId:string}", s.UsersController.Users)
+	s.App.Get ("/api/v1/admin/users", s.AdminController.Users)
+}
+
 func (s *Server) Start() error {
 	defer s.Logger.Flush()
 
@@ -188,7 +196,7 @@ func (s *Server) Start() error {
 	// Stop on SIGINTs and SIGTERMs.
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	s.App.Get ("/status", s.StatusController.Status)
+	s.ControllerInitialize()
 
 	go func() {
 		s.Logger.Info("Starship-IaC started - listening on port %v", s.Port)
