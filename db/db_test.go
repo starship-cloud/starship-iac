@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/starship-cloud/starship-iac/server/core/db"
 	"go.mongodb.org/mongo-driver/bson"
 	"testing"
 )
@@ -27,7 +28,7 @@ type Student struct {
 }
 
 func Test_Insert(t *testing.T) {
-	err := Init()
+	err := db.Init()
 	if err != nil {
 		return
 	}
@@ -38,25 +39,25 @@ func Test_Insert(t *testing.T) {
 		Sid:    "001",
 		Status: 1,
 	}
-	result := Insert(&data)
+	result := db.Insert(&data)
 	Assert(t, result != true, "result should be true")
 }
 
 func Test_GetOne(t *testing.T) {
-	err := Init()
+	err := db.Init()
 	if err != nil {
 		return
 	}
 
 	filter := bson.M{"name": "tom"}
-	result := GetOne(filter)
+	result := db.GetOne(filter)
 	fmt.Println(result)
 
 	Assert(t, result != nil, "result should be nil")
 }
 
 func Test_UpdateOrSave(t *testing.T) {
-	err := Init()
+	err := db.Init()
 	if err != nil {
 		return
 	}
@@ -67,28 +68,28 @@ func Test_UpdateOrSave(t *testing.T) {
 		Sid:    "002",
 		Status: 2,
 	}
-	result := UpdateOrSave(&data, bson.M{})
+	result := db.UpdateOrSave(&data, bson.M{})
 	fmt.Println(result)
 	Assert(t, result != true, "result should be true")
 }
 
 func Test_GetList(t *testing.T) {
-	err := Init()
+	err := db.Init()
 	if err != nil {
 		return
 	}
-	result := GetList(bson.M{})
+	result := db.GetList(bson.M{})
 	fmt.Println(result)
 }
 
 func Test_Delete(t *testing.T) {
-	err := Init()
+	err := db.Init()
 	if err != nil {
 		return
 	}
 	filter := bson.M{"name": "tom"}
 
-	result := Delete(filter)
+	result := db.Delete(filter)
 	fmt.Println(result)
 	Assert(t, result, "result should be true")
 }

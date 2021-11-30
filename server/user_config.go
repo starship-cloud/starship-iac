@@ -92,6 +92,7 @@ type UserConfig struct {
 	WebUsername            string          `mapstructure:"web-username"`
 	WebPassword            string          `mapstructure:"web-password"`
 	WriteGitCreds          bool            `mapstructure:"write-git-creds"`
+	DBConfig               DBConfig        `mapstructure:"dbconfig"`
 }
 
 // ToLogLevel returns the LogLevel object corresponding to the user-passed

@@ -71,6 +71,16 @@ type WebhookConfig struct {
 	Channel string `mapstructure:"channel"`
 }
 
+type DBConfig struct {
+	MongoDBConnectionUri string `mapstructure:"mongodburi"`
+	MongoDBName          string `mapstructure:"mongodbname"`
+	MongoDBUserName      string `mapstructure:"mongodbusername"`
+	MongoDBPassword      string `mapstructure:"mongodbpassword"`
+	MaxConnection        int    `mapstructure:"maxconnection"`
+	RootCmdLogPath       string `mapstructure:"rootcmdlogpath"`
+	RootSecret           string `mapstructure:"rootsecret"`
+}
+
 // NewServer returns a new server. If there are issues starting the server or
 // its dependencies an error will be returned. This is like the main() function
 // for the server CLI command because it injects all the dependencies.
@@ -114,6 +124,9 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	boltdb, err := db.New(userConfig.DataDir)
+
+	//mongoDB, err:= db.new
+
 	if err != nil {
 		return nil, err
 	}
@@ -174,11 +187,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 }
 
 func (s *Server) ControllersInitialize(){
-	s.App.Get ("/api/v1/status", s.StatusController.Status)
-	s.App.Get ("/api/v1/users/{userId:string}", s.UsersController.Users)
-	s.App.Get ("/api/v1/admin/users", s.AdminController.Users)
-	s.App.Post("/api/v1/login", s.LoginController.Login)
-	s.App.Post("/api/v1/logout", s.LoginController.Logout)
+	apiVer := "/api/v1"
+	s.App.Get (apiVer + "/status", s.StatusController.Status)
+	s.App.Get (apiVer + "/users/{userId:string}", s.UsersController.Users)
+	s.App.Get (apiVer + "/admin/users", s.AdminController.Users)
+	s.App.Post(apiVer + "/login", s.LoginController.Login)
+	s.App.Post(apiVer + "/logout", s.LoginController.Logout)
 }
 
 func (s *Server) Start() error {

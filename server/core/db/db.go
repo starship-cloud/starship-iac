@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"github.com/starship-cloud/starship-iac/server"
 	"github.com/starship-cloud/starship-iac/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -102,4 +103,31 @@ func GetList(m bson.M) []*interface{} {
 
 	log.Println("action->find list,: ", list)
 	return list
+}
+
+//refactor
+type MongoDB struct {
+	DB                   *mongo.Client
+}
+
+func (d *MongoDB) NewDB (dbConfig *server.DBConfig) (*MongoDB, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	clientOptions := options.Client().ApplyURI(dbConfig.MongoDBConnectionUri)
+	clientOptions.SetMaxPoolSize(uint64(dbConfig.MaxConnection))
+	credential := options.Credential{
+		Username: dbConfig.MongoDBUserName,
+		Password: dbConfig.MongoDBPassword,
+	}
+
+	clientOptions.SetAuth(credential)
+	db, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		fmt.Println("MongoDb connect success!")
+	}
+
+	return &MongoDB{
+		DB:   db,
+	}, err
 }
