@@ -8,6 +8,7 @@ import (
 	"github.com/starship-cloud/starship-iac/taskpool"
 	"github.com/starship-cloud/starship-iac/utils"
 	"log"
+	"net/http"
 	"time"
 )
 
@@ -28,6 +29,7 @@ var jwtMiddleware = jwt.New(jwt.Config{
 
 func Init() *iris.Application {
 	app := iris.New()
+	app.UseGlobal(checkToken)
 	app.Post("/apply", apply)
 	app.Post("/cancel", cancel)
 	return app
@@ -44,29 +46,45 @@ func createToken(userId string) (string, error) {
 	return token.SignedString([]byte(utils.RootSecret))
 }
 
-func checkToken(userId string, ctx iris.Context) (string, bool) {
+func checkToken(ctx iris.Context) {
+	path := ctx.Path()
+	if path == "/login" || path == "/healthz" || path == "/status" {
+		ctx.Next()
+		return
+	}
+
 	if err := jwtMiddleware.CheckJWT(ctx); err != nil {
 		jwtMiddleware.Config.ErrorHandler(ctx, err)
-		return "", false
+		ctx.StatusCode(http.StatusUnauthorized)
+		ctx.Values().Set("msg", "Wrong token")
+		return
 	}
 
 	token := ctx.Values().Get("jwt").(*jwt.Token)
 	tokenInfo := token.Claims.(jwt.MapClaims)
+	userId := ctx.URLParam("id")
 	if userId != tokenInfo["userId"] {
-		return "", false
+		ctx.StatusCode(http.StatusUnauthorized)
+		ctx.Values().Set("msg", "User does not have permission.")
+		return
 	}
 	if time.Now().Unix() > int64(tokenInfo["exp"].(float64)) {
 		//token timeout
-		return "", false
+		ctx.StatusCode(http.StatusUnauthorized)
+		ctx.Values().Set("msg", "Token timeout.")
+		return
 	} else {
 		//update token
 		if int64(tokenInfo["exp"].(float64))-time.Now().Unix() < 30 {
 			newToken, _ := createToken(userId)
-			return newToken, true
+			ctx.Header("token", newToken)
+			ctx.Next()
+			return
 		}
 	}
 	oldToken, _ := token.SignedString([]byte(utils.RootSecret))
-	return oldToken, true
+	ctx.Header("token", oldToken)
+	ctx.Next()
 }
 
 func apply(ctx iris.Context) {

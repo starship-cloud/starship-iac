@@ -1,4 +1,3 @@
-
 package server
 
 import (
@@ -25,25 +24,25 @@ import (
 
 // Server runs the Atlantis web server.
 type Server struct {
-	Port                          int
-	Logger                        logging.SimpleLogging
+	Port   int
+	Logger logging.SimpleLogging
 	//GithubAppController           *controllers.GithubAppController
 	//LocksController               *controllers.LocksController
 
-	App                           *iris.Application
-	LocksController               *controllers.LocksController
-	StatusController              *controllers.StatusController
-	UsersController               *controllers.UsersController
-	AdminController               *controllers.AdminController
-	LoginController               *controllers.LoginController
+	App              *iris.Application
+	LocksController  *controllers.LocksController
+	StatusController *controllers.StatusController
+	UsersController  *controllers.UsersController
+	AdminController  *controllers.AdminController
+	LoginController  *controllers.LoginController
 
-	SSLCertFile                   string
-	SSLKeyFile                    string
-	SSLPort                       int
-	Drainer                       *events.Drainer
-	WebAuthentication             bool
-	WebUsername                   string
-	WebPassword                   string
+	SSLCertFile       string
+	SSLKeyFile        string
+	SSLPort           int
+	Drainer           *events.Drainer
+	WebAuthentication bool
+	WebUsername       string
+	WebPassword       string
 }
 
 // Config holds config for server that isn't passed in by the user.
@@ -173,26 +172,26 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	drainer := &events.Drainer{}
 
 	return &Server{
-		Port:                          userConfig.Port,
-		Logger:                        logger,
-		SSLKeyFile:                    userConfig.SSLKeyFile,
-		SSLCertFile:                   userConfig.SSLCertFile,
-		Drainer:                       drainer,
-		WebAuthentication:             userConfig.WebBasicAuth,
-		WebUsername:                   userConfig.WebUsername,
-		WebPassword:                   userConfig.WebPassword,
-		LocksController:               locksController,
-		App:                           app,
+		Port:              userConfig.Port,
+		Logger:            logger,
+		SSLKeyFile:        userConfig.SSLKeyFile,
+		SSLCertFile:       userConfig.SSLCertFile,
+		Drainer:           drainer,
+		WebAuthentication: userConfig.WebBasicAuth,
+		WebUsername:       userConfig.WebUsername,
+		WebPassword:       userConfig.WebPassword,
+		LocksController:   locksController,
+		App:               app,
 	}, nil
 }
 
-func (s *Server) ControllersInitialize(){
+func (s *Server) ControllersInitialize() {
 	apiVer := "/api/v1"
-	s.App.Get (apiVer + "/status", s.StatusController.Status)
-	s.App.Get (apiVer + "/users/{userId:string}", s.UsersController.Users)
-	s.App.Get (apiVer + "/admin/users", s.AdminController.Users)
-	s.App.Post(apiVer + "/login", s.LoginController.Login)
-	s.App.Post(apiVer + "/logout", s.LoginController.Logout)
+	s.App.Get(apiVer+"/status", s.StatusController.Status)
+	s.App.Get(apiVer+"/users/{userId:string}", s.UsersController.Users)
+	s.App.Get(apiVer+"/admin/users", s.AdminController.Users)
+	s.App.Post(apiVer+"/login", s.LoginController.Login)
+	s.App.Post(apiVer+"/logout", s.LoginController.Logout)
 }
 
 func (s *Server) Start() error {
@@ -209,8 +208,10 @@ func (s *Server) Start() error {
 		s.Logger.Info("Starship-IaC started - listening on port %v", s.Port)
 
 		var err error
+		s.App.UseGlobal(checkToken)
 		if s.SSLCertFile != "" && s.SSLKeyFile != "" {
-			err = s.App.Run(iris.TLS(":" + string(s.SSLPort), s.SSLCertFile, s.SSLKeyFile))
+
+			err = s.App.Run(iris.TLS(":"+string(s.SSLPort), s.SSLCertFile, s.SSLKeyFile))
 		} else {
 			err = s.App.Run(iris.Addr(":" + string(s.Port)))
 		}
@@ -249,6 +250,7 @@ func (s *Server) waitForDrain() {
 		}
 	}
 }
+
 //TODO
 // Healthz returns the health check response. It always returns a 200 currently.
 //func (s *Server) Healthz(w http.ResponseWriter, _ *http.Request) {
