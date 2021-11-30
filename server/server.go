@@ -130,8 +130,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, err
 	}
 
-	drainer := &events.Drainer{}
-
 	return &Server{
 		Port:                          userConfig.Port,
 		Logger:                        logger,

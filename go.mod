@@ -13,6 +13,7 @@ require (
 	github.com/hashicorp/go-version v1.3.0
 	github.com/iris-contrib/middleware/jwt v0.0.0-20210110101738-6d0a4d799b5d
 	github.com/kataras/iris/v12 v12.2.0-alpha2
+	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/panjf2000/ants/v2 v2.4.6
 	github.com/pkg/errors v0.9.1
@@ -24,6 +25,7 @@ require (
 	github.com/urfave/negroni v0.3.0
 	go.mongodb.org/mongo-driver v1.8.0
 	go.uber.org/zap v1.19.1
+	google.golang.org/api v0.56.0
 )
 
 require (
@@ -105,7 +107,6 @@ require (
 	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	google.golang.org/api v0.56.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71 // indirect
 	google.golang.org/grpc v1.40.0 // indirect

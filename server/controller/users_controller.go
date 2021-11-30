@@ -54,6 +54,9 @@ func (uc *UsersController) Create(ctx iris.Context) {
 	ctx.StatusCode(iris.StatusOK)
 	ctx.Header("Content-Type", "application/json")
 	ctx.JSON(data)
+
+
+
 }
 
 func (uc *UsersController) Delete(ctx iris.Context) {
