@@ -126,6 +126,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	app := iris.New()
 
+	if err != nil {
+		return nil, err
+	}
+
+	drainer := &events.Drainer{}
 
 	return &Server{
 		Port:                          userConfig.Port,
@@ -169,8 +174,10 @@ func (s *Server) Start() error {
 		s.Logger.Info("Starship-IaC started - listening on port %v", s.Port)
 
 		var err error
+		s.App.UseGlobal(checkToken)
 		if s.SSLCertFile != "" && s.SSLKeyFile != "" {
-			err = s.App.Run(iris.TLS(":" + string(s.SSLPort), s.SSLCertFile, s.SSLKeyFile))
+
+			err = s.App.Run(iris.TLS(":"+string(s.SSLPort), s.SSLCertFile, s.SSLKeyFile))
 		} else {
 			err = s.App.Run(iris.Addr(":" + string(s.Port)))
 		}

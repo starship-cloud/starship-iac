@@ -1,7 +1,11 @@
 package server
 
 import (
+	"github.com/iris-contrib/middleware/jwt"
+	"github.com/kataras/iris/v12"
+	"github.com/starship-cloud/starship-iac/utils"
 	"net/http"
+	"time"
 
 	"github.com/starship-cloud/starship-iac/server/logging"
 	"github.com/urfave/negroni"
@@ -56,4 +60,63 @@ func (l *RequestLogger) ServeHTTP(rw http.ResponseWriter, r *http.Request, next 
 		next(rw, r)
 	}
 	l.logger.Debug("%s %s – respond HTTP %d", r.Method, r.URL.RequestURI(), rw.(negroni.ResponseWriter).Status())
+}
+
+var jwtMiddleware = jwt.New(jwt.Config{
+	ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
+		return []byte(utils.RootSecret), nil
+	},
+	Expiration:    true,
+	Extractor:     jwt.FromParameter("token"),
+	SigningMethod: jwt.SigningMethodHS256,
+})
+
+func createToken(userId string) (string, error) {
+	now := time.Now()
+	token := jwt.NewTokenWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userId": userId,
+		"iat":    now.Unix(),
+		"exp":    now.Add(15 * time.Minute).Unix(),
+	})
+
+	return token.SignedString([]byte(utils.RootSecret))
+}
+
+func checkToken(ctx iris.Context) {
+	path := ctx.Path()
+	if path == "/login" || path == "/healthz" || path == "/status" {
+		ctx.Next()
+	}
+
+	if err := jwtMiddleware.CheckJWT(ctx); err != nil {
+		jwtMiddleware.Config.ErrorHandler(ctx, err)
+		ctx.StatusCode(http.StatusUnauthorized)
+		ctx.Values().Set("msg", "Wrong token")
+		return
+	}
+
+	token := ctx.Values().Get("jwt").(*jwt.Token)
+	tokenInfo := token.Claims.(jwt.MapClaims)
+	userId := ctx.URLParam("id")
+	if userId != tokenInfo["userId"] {
+		ctx.StatusCode(http.StatusUnauthorized)
+		ctx.Values().Set("msg", "User does not have permission.")
+		return
+	}
+	if time.Now().Unix() > int64(tokenInfo["exp"].(float64)) {
+		//token timeout
+		ctx.StatusCode(http.StatusUnauthorized)
+		ctx.Values().Set("msg", "Token timeout.")
+		return
+	} else {
+		//update token
+		if int64(tokenInfo["exp"].(float64))-time.Now().Unix() < 30 {
+			newToken, _ := createToken(userId)
+			ctx.Header("token", newToken)
+			ctx.Next()
+		}
+	}
+	oldToken, _ := token.SignedString([]byte(utils.RootSecret))
+	ctx.Header("token", oldToken)
+	ctx.Next()
 }
