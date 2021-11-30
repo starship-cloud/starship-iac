@@ -5,20 +5,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/kataras/iris/v12"
-	"github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
 	"github.com/runatlantis/atlantis/server/controllers/templates"
 	"github.com/starship-cloud/starship-iac/server/controller"
+	//"github.com/starship-cloud/starship-iac/server/core/db"
 	"github.com/starship-cloud/starship-iac/server/core/db"
 	"github.com/starship-cloud/starship-iac/server/core/locking"
 	"github.com/starship-cloud/starship-iac/server/events"
 	"github.com/starship-cloud/starship-iac/server/logging"
 	"github.com/urfave/cli"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -71,16 +68,6 @@ type WebhookConfig struct {
 	Channel string `mapstructure:"channel"`
 }
 
-type DBConfig struct {
-	MongoDBConnectionUri string `mapstructure:"mongodburi"`
-	MongoDBName          string `mapstructure:"mongodbname"`
-	MongoDBUserName      string `mapstructure:"mongodbusername"`
-	MongoDBPassword      string `mapstructure:"mongodbpassword"`
-	MaxConnection        int    `mapstructure:"maxconnection"`
-	RootCmdLogPath       string `mapstructure:"rootcmdlogpath"`
-	RootSecret           string `mapstructure:"rootsecret"`
-}
-
 // NewServer returns a new server. If there are issues starting the server or
 // its dependencies an error will be returned. This is like the main() function
 // for the server CLI command because it injects all the dependencies.
@@ -91,41 +78,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, err
 	}
 
-	if userConfig.GithubUser != "" || userConfig.GithubAppID != 0 {
-		if userConfig.GithubUser != "" {
-			//githubCredentials = &vcs.GithubUserCredentials{
-			//	User:  userConfig.GithubUser,
-			//	Token: userConfig.GithubToken,
-			//}
-		} else if userConfig.GithubAppID != 0 && userConfig.GithubAppKeyFile != "" {
-		} else if userConfig.GithubAppID != 0 && userConfig.GithubAppKey != "" {
-		}
-
-		//var err error
-		//githubClient, err = vcs.NewGithubClient(userConfig.GithubHostname, githubCredentials, logger, userConfig.VCSStatusName)
-		//if err != nil {
-		//	return nil, err
-		//}
-	}
-
-	if userConfig.WriteGitCreds {
-		home, err := homedir.Dir()
-		if err != nil {
-			return nil, errors.Wrap(err, "getting home dir to write ~/.git-credentials file")
-		}
-		if userConfig.GithubUser != "" {
-			//if err := events.WriteGitCreds(userConfig.GithubUser, userConfig.GithubToken, userConfig.GithubHostname, home, logger, false); err != nil {
-			//	return nil, err
-			//}
-			fmt.Println(home)
-		}
-		if userConfig.GitlabUser != "" {
-		}
-	}
-
-	boltdb, err := db.New(userConfig.DataDir)
-
-	//mongoDB, err:= db.new
+	drainer := &events.Drainer{}
+	db, err := db.NewDB(userConfig.DBConfig)
 
 	if err != nil {
 		return nil, err
@@ -135,9 +89,9 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	if userConfig.DisableRepoLocking {
 		lockingClient = locking.NewNoOpLocker()
 	} else {
-		lockingClient = locking.NewClient(boltdb)
+		//lockingClient = locking.NewClient(boltdb)
 	}
-	applyLockingClient = locking.NewApplyClient(boltdb, userConfig.DisableApply)
+	//applyLockingClient = locking.NewApplyClient(boltdb, userConfig.DisableApply)
 	workingDirLocker := events.NewDefaultWorkingDirLocker()
 
 	var workingDir events.WorkingDir = &events.FileWorkspace{
@@ -150,7 +104,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Logger:           logger,
 		WorkingDir:       workingDir,
 		WorkingDirLocker: workingDirLocker,
-		DB:               boltdb,
+		DB:               db,
 	}
 
 	locksController := &controllers.LocksController{
@@ -160,17 +114,18 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		LockDetailTemplate: templates.LockTemplate,
 		WorkingDir:         workingDir,
 		WorkingDirLocker:   workingDirLocker,
-		DB:                 boltdb,
+		DB:                 db,
 		DeleteLockCommand:  deleteLockCommand,
+	}
+
+	userController := &controllers.UsersController{
+		Logger:            logger,
+		Drainer:           drainer,
+		DB:                db,
 	}
 
 	app := iris.New()
 
-	if err != nil {
-		return nil, err
-	}
-
-	drainer := &events.Drainer{}
 
 	return &Server{
 		Port:                          userConfig.Port,
@@ -182,6 +137,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		WebUsername:                   userConfig.WebUsername,
 		WebPassword:                   userConfig.WebPassword,
 		LocksController:               locksController,
+		UsersController:               userController,
 		App:                           app,
 	}, nil
 }
@@ -189,7 +145,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 func (s *Server) ControllersInitialize(){
 	apiVer := "/api/v1"
 	s.App.Get (apiVer + "/status", s.StatusController.Status)
-	s.App.Get (apiVer + "/users/{userId:string}", s.UsersController.Users)
+
+	s.App.Get (apiVer + "/users/{userId:string}", s.UsersController.Get)
+	s.App.Post(apiVer + "/users/create", s.UsersController.Create)
+	s.App.Post(apiVer + "/users/create", s.UsersController.Delete)
+
 	s.App.Get (apiVer + "/admin/users", s.AdminController.Users)
 	s.App.Post(apiVer + "/login", s.LoginController.Login)
 	s.App.Post(apiVer + "/logout", s.LoginController.Logout)
@@ -249,37 +209,4 @@ func (s *Server) waitForDrain() {
 		}
 	}
 }
-//TODO
-// Healthz returns the health check response. It always returns a 200 currently.
-//func (s *Server) Healthz(w http.ResponseWriter, _ *http.Request) {
-//	data, err := json.MarshalIndent(&struct {
-//		Status string `json:"status"`
-//	}{
-//		Status: "ok",
-//	}, "", "  ")
-//	if err != nil {
-//		w.WriteHeader(http.StatusInternalServerError)
-//		fmt.Fprintf(w, "Error creating status json response: %s", err)
-//		return
-//	}
-//	w.Header().Set("Content-Type", "application/json")
-//	w.Write(data) // nolint: errcheck
-//}
 
-// ParseURL parses the user-passed atlantis URL to ensure it is valid
-// and we can use it in our templates.
-// It removes any trailing slashes from the path so we can concatenate it
-// with other paths without checking.
-func ParseURL(u string) (*url.URL, error) {
-	parsed, err := url.Parse(u)
-	if err != nil {
-		return nil, err
-	}
-	if !(parsed.Scheme == "http" || parsed.Scheme == "https") {
-		return nil, errors.New("http or https must be specified")
-	}
-	// We want the path to end without a trailing slash so we know how to
-	// use it in the rest of the program.
-	parsed.Path = strings.TrimSuffix(parsed.Path, "/")
-	return parsed, nil
-}

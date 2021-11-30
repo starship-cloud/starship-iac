@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/starship-cloud/starship-iac/server/core/db"
 	"github.com/starship-cloud/starship-iac/server/logging"
 )
 
@@ -92,7 +93,7 @@ type UserConfig struct {
 	WebUsername            string          `mapstructure:"web-username"`
 	WebPassword            string          `mapstructure:"web-password"`
 	WriteGitCreds          bool            `mapstructure:"write-git-creds"`
-	DBConfig               DBConfig        `mapstructure:"dbconfig"`
+	DBConfig               *db.DBConfig    `mapstructure:"dbconfig"`
 }
 
 // ToLogLevel returns the LogLevel object corresponding to the user-passed

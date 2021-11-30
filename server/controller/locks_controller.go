@@ -2,15 +2,15 @@ package controllers
 
 import (
 	"fmt"
-	"net/http"
-	"net/url"
-	"github.com/runatlantis/atlantis/server/controllers/templates"
 	"github.com/gorilla/mux"
+	"github.com/runatlantis/atlantis/server/controllers/templates"
+	"github.com/starship-cloud/starship-iac/server/core/db"
 	"github.com/starship-cloud/starship-iac/server/core/locking"
 	"github.com/starship-cloud/starship-iac/server/events"
 	"github.com/starship-cloud/starship-iac/server/events/models"
 	"github.com/starship-cloud/starship-iac/server/logging"
-	"github.com/starship-cloud/starship-iac/server/core/db"
+	"net/http"
+	"net/url"
 )
 
 // LocksController handles all requests relating to Atlantis locks.
@@ -18,11 +18,10 @@ type LocksController struct {
 	Locker             locking.Locker
 	Logger             logging.SimpleLogging
 	ApplyLocker        locking.ApplyLocker
-	//VCSClient          vcs.Client
 	LockDetailTemplate templates.TemplateWriter
 	WorkingDir         events.WorkingDir
 	WorkingDirLocker   events.WorkingDirLocker
-	DB                 *db.BoltDB
+	DB                 *db.MongoDB
 	DeleteLockCommand  events.DeleteLockCommand
 }
 
@@ -132,9 +131,9 @@ func (l *LocksController) DeleteLock(w http.ResponseWriter, r *http.Request) {
 				l.Logger.Err("unable to delete workspace: %s", err)
 			}
 		}
-		if err := l.DB.UpdateProjectStatus(lock.Pull, lock.Workspace, lock.Project.Path, models.DiscardedPlanStatus); err != nil {
-			l.Logger.Err("unable to update project status: %s", err)
-		}
+		//if err := l.DB.UpdateProjectStatus(lock.Pull, lock.Workspace, lock.Project.Path, models.DiscardedPlanStatus); err != nil {
+		//	l.Logger.Err("unable to update project status: %s", err)
+		//}
 
 		// Once the lock has been deleted, comment back on the pull request.
 		//comment := fmt.Sprintf("**Warning**: The plan for dir: `%s` workspace: `%s` was **discarded** via the Atlantis UI.\n\n"+

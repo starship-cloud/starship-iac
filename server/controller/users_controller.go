@@ -4,40 +4,58 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kataras/iris/v12"
+	"github.com/starship-cloud/starship-iac/server/core/db"
 	"github.com/starship-cloud/starship-iac/server/events"
 	"github.com/starship-cloud/starship-iac/server/logging"
 )
 
-type UsersReqBody struct {
-	Key     string   `json:"key"`
-	Command string   `json:"command"`
-	Params  []string `json:"params"`
+const(
+	DB_COLLECTION    =  "users"
+)
+
+type createUserReq struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
 }
 
-// UsersController handles the status of Atlantis.
+type deleteUserReq struct {
+	UserId string `json:"userid"`
+}
+
 type UsersController struct {
 	Logger  logging.SimpleLogging
 	Drainer *events.Drainer
+	DB      *db.MongoDB
 }
 
-type UsersResponse struct {
-	ShuttingDown  bool `json:"shutting_down"`
-	InProgressOps int  `json:"in_progress_operations"`
+type createUsersResp struct {
+	StatusCode  uint `json:"status_code"`
 }
 
-func (d *UsersController) Users(ctx iris.Context) {
-	status := d.Drainer.GetStatus()
-	data, err := json.MarshalIndent(&UsersResponse{
-		ShuttingDown:  status.ShuttingDown,
-		InProgressOps: status.InProgressOps,
+type deleteUsersResp struct {
+	StatusCode  bool `json:"status_code"`
+}
+
+func (uc *UsersController) Get(ctx iris.Context) {
+}
+
+func (uc *UsersController) Create(ctx iris.Context) {
+	data, err := json.MarshalIndent(&createUsersResp{
+		StatusCode:  iris.StatusOK,
 	}, "", "  ")
+
 	if err != nil {
 		ctx.StatusCode(iris.StatusInternalServerError)
-		d.Logger.Info(fmt.Sprintf("Error creating user json response: %s", err))
+		uc.Logger.Info(fmt.Sprintf("Error creating user json response: %s", err))
 		return
 	}
 
 	ctx.StatusCode(iris.StatusOK)
 	ctx.Header("Content-Type", "application/json")
 	ctx.JSON(data)
+}
+
+func (uc *UsersController) Delete(ctx iris.Context) {
+
 }

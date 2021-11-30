@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/starship-cloud/starship-iac/server"
 	"github.com/starship-cloud/starship-iac/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,7 +13,44 @@ import (
 
 var collection *mongo.Collection
 
-func Init() (err error) {
+//refactor
+type DBConfig struct {
+	MongoDBConnectionUri string `mapstructure:"mongodburi"`
+	MongoDBName          string `mapstructure:"mongodbname"`
+	MongoDBUserName      string `mapstructure:"mongodbusername"`
+	MongoDBPassword      string `mapstructure:"mongodbpassword"`
+	MaxConnection        int    `mapstructure:"maxconnection"`
+	RootCmdLogPath       string `mapstructure:"rootcmdlogpath"`
+	RootSecret           string `mapstructure:"rootsecret"`
+}
+
+type MongoDB struct {
+	DBClient                   *mongo.Client
+}
+
+func NewDB (dbConfig *DBConfig) (*MongoDB, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	clientOptions := options.Client().ApplyURI(dbConfig.MongoDBConnectionUri)
+	clientOptions.SetMaxPoolSize(uint64(dbConfig.MaxConnection))
+	credential := options.Credential{
+		Username: dbConfig.MongoDBUserName,
+		Password: dbConfig.MongoDBPassword,
+	}
+
+	clientOptions.SetAuth(credential)
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		fmt.Println("MongoDb connect success!")
+	}
+
+	return &MongoDB{
+		DBClient:   client,
+	}, err
+}
+
+func (d *MongoDB)Init() (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	clientOptions := options.Client().ApplyURI(utils.MongoDBConnectionUri)
@@ -32,7 +68,7 @@ func Init() (err error) {
 	return err
 }
 
-func Insert(data interface{}) bool {
+func (d *MongoDB)Insert(data interface{}) bool {
 	objId, err := collection.InsertOne(context.TODO(), data)
 
 	if err != nil {
@@ -43,7 +79,7 @@ func Insert(data interface{}) bool {
 	return true
 }
 
-func Delete(m bson.M) bool {
+func (d *MongoDB)Delete(m bson.M) bool {
 	deleteResult, err := collection.DeleteOne(context.Background(), m)
 	if err != nil {
 		log.Println(err)
@@ -53,7 +89,7 @@ func Delete(m bson.M) bool {
 	return true
 }
 
-func UpdateOrSave(target interface{}, filter bson.M) bool {
+func (d *MongoDB)UpdateOrSave(target interface{}, filter bson.M) bool {
 	update := bson.M{"$set": target}
 	updateOpts := options.Update().SetUpsert(true)
 	updateResult, err := collection.UpdateOne(context.Background(), filter, update, updateOpts)
@@ -65,7 +101,7 @@ func UpdateOrSave(target interface{}, filter bson.M) bool {
 	return true
 }
 
-func Update(target *interface{}, filter bson.M) bool {
+func (d *MongoDB)Update(target *interface{}, filter bson.M) bool {
 	update := bson.M{"$set": target}
 	updateResult, err := collection.UpdateMany(context.Background(), filter, update)
 	if err != nil {
@@ -76,7 +112,7 @@ func Update(target *interface{}, filter bson.M) bool {
 	return true
 }
 
-func GetOne(m bson.M) interface{} {
+func (d *MongoDB)GetOne(m bson.M) interface{} {
 	var one interface{}
 	err := collection.FindOne(context.Background(), m).Decode(&one)
 	if err != nil {
@@ -87,7 +123,7 @@ func GetOne(m bson.M) interface{} {
 	return one
 }
 
-func GetList(m bson.M) []*interface{} {
+func (d *MongoDB)GetList(m bson.M) []*interface{} {
 	var list []*interface{}
 	cursor, err := collection.Find(context.Background(), m)
 	if err != nil {
@@ -105,29 +141,3 @@ func GetList(m bson.M) []*interface{} {
 	return list
 }
 
-//refactor
-type MongoDB struct {
-	DB                   *mongo.Client
-}
-
-func (d *MongoDB) NewDB (dbConfig *server.DBConfig) (*MongoDB, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	clientOptions := options.Client().ApplyURI(dbConfig.MongoDBConnectionUri)
-	clientOptions.SetMaxPoolSize(uint64(dbConfig.MaxConnection))
-	credential := options.Credential{
-		Username: dbConfig.MongoDBUserName,
-		Password: dbConfig.MongoDBPassword,
-	}
-
-	clientOptions.SetAuth(credential)
-	db, err := mongo.Connect(ctx, clientOptions)
-	if err != nil {
-		fmt.Println("MongoDb connect success!")
-	}
-
-	return &MongoDB{
-		DB:   db,
-	}, err
-}

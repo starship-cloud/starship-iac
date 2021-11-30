@@ -21,7 +21,7 @@ type DefaultDeleteLockCommand struct {
 	Logger           logging.SimpleLogging
 	WorkingDir       WorkingDir
 	WorkingDirLocker WorkingDirLocker
-	DB               *db.BoltDB
+	DB               *db.MongoDB
 }
 
 // DeleteLock handles deleting the lock at id
@@ -76,7 +76,8 @@ func (l *DefaultDeleteLockCommand) deleteWorkingDir(lock models.ProjectLock) {
 			l.Logger.Err("unable to delete workspace: %s", err)
 		}
 	}
-	if err := l.DB.UpdateProjectStatus(lock.Pull, lock.Workspace, lock.Project.Path, models.DiscardedPlanStatus); err != nil {
-		l.Logger.Err("unable to delete project status: %s", err)
-	}
+
+	//if err := l.DB.UpdateProjectStatus(lock.Pull, lock.Workspace, lock.Project.Path, models.DiscardedPlanStatus); err != nil {
+	//	l.Logger.Err("unable to delete project status: %s", err)
+	//}
 }
