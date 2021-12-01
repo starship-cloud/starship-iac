@@ -46,14 +46,6 @@ type StructuredLogger struct {
 	z           *zap.SugaredLogger
 	level       zap.AtomicLevel
 	keepHistory bool
-	// History stores all log entries ever written using
-	// this logger. This is safe for short-lived loggers
-	// like those used during plan/apply commands.
-	// TODO: Deprecate this
-	// this is added here to maintain backwards compatibility
-	// This doesn't really make sense to keep given that structured logging
-	// gives us the ability to query our logs across multiple dimensions
-	// I don't believe we should mix this in with atlantis commands and expose this to the user
 	history bytes.Buffer
 }
 

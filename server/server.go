@@ -21,7 +21,6 @@ type Server struct {
 	Port                          int
 	Logger                        logging.SimpleLogging
 	App                           *iris.Application
-	LocksController               *controllers.LocksController
 	StatusController              *controllers.StatusController
 	UsersController               *controllers.UsersController
 	AdminController               *controllers.AdminController

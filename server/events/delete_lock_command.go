@@ -59,9 +59,6 @@ func (l *DefaultDeleteLockCommand) DeleteLocksByPull(repoFullName string, pullNu
 }
 
 func (l *DefaultDeleteLockCommand) deleteWorkingDir(lock models.ProjectLock) {
-	// NOTE: Because BaseRepo was added to the PullRequest model later, previous
-	// installations of Atlantis will have locks in their DB that do not have
-	// this field on PullRequest. We skip deleting the working dir in this case.
 	if lock.Pull.BaseRepo == (models.Repo{}) {
 		l.Logger.Debug("Not deleting the working dir.")
 		return

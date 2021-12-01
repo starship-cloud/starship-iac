@@ -225,7 +225,7 @@ func (w *FileWorkspace) forceClone(log logging.SimpleLogging,
 			// always succeed whereas without --no-ff, if the merge was fast
 			// forwarded then git rev-parse HEAD^2 would fail.
 			{
-				"git", "merge", "-q", "--no-ff", "-m", "atlantis-merge", "FETCH_HEAD",
+				"git", "merge", "-q", "--no-ff", "-m", "starship-merge", "FETCH_HEAD",
 			},
 		}
 	} else {
@@ -241,9 +241,9 @@ func (w *FileWorkspace) forceClone(log logging.SimpleLogging,
 		cmd.Dir = cloneDir
 		// The git merge command requires these env vars are set.
 		cmd.Env = append(os.Environ(), []string{
-			"EMAIL=atlantis@runatlantis.io",
-			"GIT_AUTHOR_NAME=atlantis",
-			"GIT_COMMITTER_NAME=atlantis",
+			"EMAIL=xxx@xxx.io",
+			"GIT_AUTHOR_NAME=",
+			"GIT_COMMITTER_NAME=",
 		}...)
 
 		cmdStr := w.sanitizeGitCredentials(strings.Join(cmd.Args, " "), p.BaseRepo, headRepo)
