@@ -5,11 +5,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/kataras/iris/v12"
-	"github.com/runatlantis/atlantis/server/controllers/templates"
 	"github.com/starship-cloud/starship-iac/server/controller"
-	//"github.com/starship-cloud/starship-iac/server/core/db"
 	"github.com/starship-cloud/starship-iac/server/core/db"
-	"github.com/starship-cloud/starship-iac/server/core/locking"
 	"github.com/starship-cloud/starship-iac/server/events"
 	"github.com/starship-cloud/starship-iac/server/logging"
 	"github.com/urfave/cli"
@@ -20,13 +17,9 @@ import (
 	"time"
 )
 
-// Server runs the Atlantis web server.
 type Server struct {
 	Port                          int
 	Logger                        logging.SimpleLogging
-	//GithubAppController           *controllers.GithubAppController
-	//LocksController               *controllers.LocksController
-
 	App                           *iris.Application
 	LocksController               *controllers.LocksController
 	StatusController              *controllers.StatusController
@@ -43,7 +36,6 @@ type Server struct {
 	WebPassword                   string
 }
 
-// Config holds config for server that isn't passed in by the user.
 type Config struct {
 	AllowForkPRsFlag        string
 	StarshipURLFlag         string
@@ -53,24 +45,6 @@ type Config struct {
 	SilenceForkPRErrorsFlag string
 }
 
-// WebhookConfig is nested within UserConfig. It's used to configure webhooks.
-type WebhookConfig struct {
-	// Event is the type of event we should send this webhook for, ex. apply.
-	Event string `mapstructure:"event"`
-	// WorkspaceRegex is a regex that is used to match against the workspace
-	// that is being modified for this event. If the regex matches, we'll
-	// send the webhook, ex. "production.*".
-	WorkspaceRegex string `mapstructure:"workspace-regex"`
-	// Kind is the type of webhook we should send, ex. slack.
-	Kind string `mapstructure:"kind"`
-	// Channel is the channel to send this webhook to. It only applies to
-	// slack webhooks. Should be without '#'.
-	Channel string `mapstructure:"channel"`
-}
-
-// NewServer returns a new server. If there are issues starting the server or
-// its dependencies an error will be returned. This is like the main() function
-// for the server CLI command because it injects all the dependencies.
 func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	logger, err := logging.NewStructuredLoggerFromLevel(userConfig.ToLogLevel())
 
@@ -79,43 +53,18 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	drainer := &events.Drainer{}
-	db, err := db.NewDB(userConfig.DBConfig)
+	db, err := db.NewDB(&db.DBConfig{
+		MongoDBConnectionUri: userConfig.MongoDBConnectionUri,
+		MongoDBName: userConfig.MongoDBName,
+		MongoDBUserName: userConfig.MongoDBUserName,
+		MongoDBPassword: userConfig.MongoDBPassword,
+		MaxConnection: userConfig.MaxConnection,
+		RootCmdLogPath: userConfig.RootCmdLogPath,
+		RootSecret: userConfig.RootSecret,
+	})
 
 	if err != nil {
-		return nil, err
-	}
-	var lockingClient locking.Locker
-	var applyLockingClient locking.ApplyLocker
-	if userConfig.DisableRepoLocking {
-		lockingClient = locking.NewNoOpLocker()
-	} else {
-		//lockingClient = locking.NewClient(boltdb)
-	}
-	//applyLockingClient = locking.NewApplyClient(boltdb, userConfig.DisableApply)
-	workingDirLocker := events.NewDefaultWorkingDirLocker()
-
-	var workingDir events.WorkingDir = &events.FileWorkspace{
-		DataDir:       userConfig.DataDir,
-		CheckoutMerge: userConfig.CheckoutStrategy == "merge",
-	}
-
-	deleteLockCommand := &events.DefaultDeleteLockCommand{
-		Locker:           lockingClient,
-		Logger:           logger,
-		WorkingDir:       workingDir,
-		WorkingDirLocker: workingDirLocker,
-		DB:               db,
-	}
-
-	locksController := &controllers.LocksController{
-		Locker:             lockingClient,
-		ApplyLocker:        applyLockingClient,
-		Logger:             logger,
-		LockDetailTemplate: templates.LockTemplate,
-		WorkingDir:         workingDir,
-		WorkingDirLocker:   workingDirLocker,
-		DB:                 db,
-		DeleteLockCommand:  deleteLockCommand,
+		return nil, fmt.Errorf("failed to initialize db.")
 	}
 
 	userController := &controllers.UsersController{
@@ -136,10 +85,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		SSLKeyFile:                    userConfig.SSLKeyFile,
 		SSLCertFile:                   userConfig.SSLCertFile,
 		Drainer:                       drainer,
-		WebAuthentication:             userConfig.WebBasicAuth,
-		WebUsername:                   userConfig.WebUsername,
-		WebPassword:                   userConfig.WebPassword,
-		LocksController:               locksController,
 		UsersController:               userController,
 		App:                           app,
 	}, nil
@@ -161,9 +106,7 @@ func (s *Server) ControllersInitialize(){
 func (s *Server) Start() error {
 	defer s.Logger.Flush()
 
-	// Ensure server gracefully drains connections when stopped.
 	stop := make(chan os.Signal, 1)
-	// Stop on SIGINTs and SIGTERMs.
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	s.ControllersInitialize()

@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-// Drainer is used to gracefully shut down atlantis by waiting for in-progress
+// Drainer is used to gracefully shut down server by waiting for in-progress
 // operations to complete.
 type Drainer struct {
 	status DrainStatus
@@ -13,9 +13,7 @@ type Drainer struct {
 }
 
 type DrainStatus struct {
-	// ShuttingDown is whether we are in the progress of shutting down.
 	ShuttingDown bool
-	// InProgressOps is the number of operations currently in progress.
 	InProgressOps int
 }
 

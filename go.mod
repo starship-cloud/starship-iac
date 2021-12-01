@@ -25,7 +25,6 @@ require (
 	github.com/urfave/negroni v0.3.0
 	go.mongodb.org/mongo-driver v1.8.0
 	go.uber.org/zap v1.19.1
-	google.golang.org/api v0.56.0
 )
 
 require (
@@ -107,6 +106,7 @@ require (
 	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
+	google.golang.org/api v0.56.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71 // indirect
 	google.golang.org/grpc v1.40.0 // indirect

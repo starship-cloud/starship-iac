@@ -18,8 +18,6 @@ func main() {
 		panic(fmt.Sprintf("unable to initialize logger. %s", err.Error()))
 	}
 
-	// We're creating commands manually here rather than using init() functions
-	// (as recommended by cobra) because it makes testing easier.
 	server := &cmd.ServerCmd{
 		ServerCreator:   &cmd.DefaultServerCreator{},
 		Viper:           v,

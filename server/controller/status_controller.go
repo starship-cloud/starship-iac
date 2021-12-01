@@ -14,7 +14,6 @@ type RequestBody struct {
 	Params  []string `json:"params"`
 }
 
-// StatusController handles the status of Atlantis.
 type StatusController struct {
 	Logger  logging.SimpleLogging
 	Drainer *events.Drainer
