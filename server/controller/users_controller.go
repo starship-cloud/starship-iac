@@ -1,26 +1,26 @@
 package controllers
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/kataras/iris/v12"
 	"github.com/starship-cloud/starship-iac/server/core/db"
 	"github.com/starship-cloud/starship-iac/server/events"
+	"github.com/starship-cloud/starship-iac/server/events/models"
 	"github.com/starship-cloud/starship-iac/server/logging"
+	"github.com/starship-cloud/starship-iac/server/services"
 )
 
-const(
-	DB_COLLECTION    =  "users"
-)
-
-type createUserReq struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Email    string `json:"email"`
+type CreateUserResp struct {
+	StatusCode uint
+	models.UserEntity
 }
 
-type deleteUserReq struct {
+type DeleteUserReq struct {
 	UserId string `json:"userid"`
+}
+
+type DeleteUserResp struct {
+	UserId string `json:"userid"`
+	StatusCode  uint `json:"status_code"`
 }
 
 type UsersController struct {
@@ -29,34 +29,30 @@ type UsersController struct {
 	DB      *db.MongoDB
 }
 
-type createUsersResp struct {
-	StatusCode  uint `json:"status_code"`
-}
-
 type deleteUsersResp struct {
 	StatusCode  bool `json:"status_code"`
 }
 
 func (uc *UsersController) Get(ctx iris.Context) {
+
 }
 
 func (uc *UsersController) Create(ctx iris.Context) {
-	data, err := json.MarshalIndent(&createUsersResp{
-		StatusCode:  iris.StatusOK,
-	}, "", "  ")
-
+	var createUserReq models.UserEntity
+	ctx.ReadJSON(&createUserReq)
+	result, err := users_service.CreateUser(&createUserReq, uc.DB)
 	if err != nil {
-		ctx.StatusCode(iris.StatusInternalServerError)
-		uc.Logger.Info(fmt.Sprintf("Error creating user json response: %s", err))
-		return
+		uc.Logger.Err(err.Error())
+		ctx.JSON(&CreateUserResp{
+			StatusCode: iris.StatusOK,
+			UserEntity : *result,
+		})
+	}else{
+		ctx.JSON(&CreateUserResp{
+			StatusCode: iris.StatusConflict,
+			UserEntity : *result,
+		})
 	}
-
-	ctx.StatusCode(iris.StatusOK)
-	ctx.Header("Content-Type", "application/json")
-	ctx.JSON(data)
-
-
-
 }
 
 func (uc *UsersController) Delete(ctx iris.Context) {

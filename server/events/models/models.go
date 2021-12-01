@@ -3,14 +3,14 @@ package models
 
 import (
 	"fmt"
+	"github.com/hashicorp/go-version"
+	"github.com/pkg/errors"
+	"github.com/starship-cloud/starship-iac/server/logging"
 	"net/url"
 	paths "path"
 	"regexp"
 	"strings"
 	"time"
-	"github.com/pkg/errors"
-	"github.com/hashicorp/go-version"
-	"github.com/starship-cloud/starship-iac/server/logging"
 )
 
 const (

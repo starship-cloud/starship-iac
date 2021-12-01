@@ -79,7 +79,7 @@ func (d *MongoDB)Insert(data interface{}) bool {
 	return true
 }
 
-func (d *MongoDB)Delete(m bson.M) bool {
+func (d *MongoDB)Delete(collection *mongo.Collection, m bson.M) bool {
 	deleteResult, err := collection.DeleteOne(context.Background(), m)
 	if err != nil {
 		log.Println(err)
@@ -89,7 +89,7 @@ func (d *MongoDB)Delete(m bson.M) bool {
 	return true
 }
 
-func (d *MongoDB)UpdateOrSave(target interface{}, filter bson.M) bool {
+func (d *MongoDB)UpdateOrSave(collection *mongo.Collection, target interface{}, filter bson.M) bool {
 	update := bson.M{"$set": target}
 	updateOpts := options.Update().SetUpsert(true)
 	updateResult, err := collection.UpdateOne(context.Background(), filter, update, updateOpts)
@@ -101,7 +101,7 @@ func (d *MongoDB)UpdateOrSave(target interface{}, filter bson.M) bool {
 	return true
 }
 
-func (d *MongoDB)Update(target *interface{}, filter bson.M) bool {
+func (d *MongoDB)Update(collection *mongo.Collection, target *interface{}, filter bson.M) bool {
 	update := bson.M{"$set": target}
 	updateResult, err := collection.UpdateMany(context.Background(), filter, update)
 	if err != nil {
@@ -112,7 +112,7 @@ func (d *MongoDB)Update(target *interface{}, filter bson.M) bool {
 	return true
 }
 
-func (d *MongoDB)GetOne(m bson.M) interface{} {
+func (d *MongoDB)GetOne(collection *mongo.Collection, m bson.M) interface{} {
 	var one interface{}
 	err := collection.FindOne(context.Background(), m).Decode(&one)
 	if err != nil {
@@ -123,7 +123,7 @@ func (d *MongoDB)GetOne(m bson.M) interface{} {
 	return one
 }
 
-func (d *MongoDB)GetList(m bson.M) []*interface{} {
+func (d *MongoDB)GetList(collection *mongo.Collection, m bson.M) []*interface{} {
 	var list []*interface{}
 	cursor, err := collection.Find(context.Background(), m)
 	if err != nil {
@@ -140,4 +140,3 @@ func (d *MongoDB)GetList(m bson.M) []*interface{} {
 	log.Println("action->find list,: ", list)
 	return list
 }
-
