@@ -5,19 +5,20 @@ import (
 )
 
 type UserConfig struct {
-	LogLevel                   string `mapstructure:"log-level"`
-	Port                       int    `mapstructure:"port"`
-	SSLPort                    int    `mapstructure:"ssl-port"`
-	SSLCertFile                string          `mapstructure:"ssl-cert-file"`
-	SSLKeyFile                 string          `mapstructure:"ssl-key-file"`
+	LogLevel      string `mapstructure:"log-level"`
+	Port          int    `mapstructure:"port"`
+	SSLPort       int    `mapstructure:"ssl-port"`
+	SSLCertFile   string `mapstructure:"ssl-cert-file"`
+	SSLKeyFile    string `mapstructure:"ssl-key-file"`
+	SkipAuthToken bool   `mapstructure:"skip-auth-token"`
 
-	MongoDBConnectionUri string `mapstructure:"mongodburi"`
-	MongoDBName          string `mapstructure:"mongodbname"`
-	MongoDBUserName      string `mapstructure:"mongodbusername"`
-	MongoDBPassword      string `mapstructure:"mongodbpassword"`
-	MaxConnection        int    `mapstructure:"maxconnection"`
-	RootCmdLogPath       string `mapstructure:"rootcmdlogpath"`
-	RootSecret           string `mapstructure:"rootsecret"`
+	MongoDBConnectionUri string `mapstructure:"mongodb-connection-uri"`
+	MongoDBName          string `mapstructure:"mongodb-name"`
+	MongoDBUserName      string `mapstructure:"mongodb-username"`
+	MongoDBPassword      string `mapstructure:"mongodb-password"`
+	MaxConnection        int    `mapstructure:"mongodb-max-connection"`
+	RootCmdLogPath       string `mapstructure:"mongodb-root-cmd-logpath"`
+	RootSecret           string `mapstructure:"mongodb-root-secret"`
 }
 
 func (u UserConfig) ToLogLevel() logging.LogLevel {

@@ -1,4 +1,3 @@
-
 package server
 
 import (
@@ -10,7 +9,6 @@ import (
 	"github.com/starship-cloud/starship-iac/server/events"
 	"github.com/starship-cloud/starship-iac/server/logging"
 	"github.com/urfave/cli"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,21 +16,22 @@ import (
 )
 
 type Server struct {
-	Port                          int
-	Logger                        logging.SimpleLogging
-	App                           *iris.Application
-	StatusController              *controllers.StatusController
-	UsersController               *controllers.UsersController
-	AdminController               *controllers.AdminController
-	LoginController               *controllers.LoginController
+	Port             int
+	Logger           logging.SimpleLogging
+	App              *iris.Application
+	StatusController *controllers.StatusController
+	UsersController  *controllers.UsersController
+	AdminController  *controllers.AdminController
+	LoginController  *controllers.LoginController
 
-	SSLCertFile                   string
-	SSLKeyFile                    string
-	SSLPort                       int
-	Drainer                       *events.Drainer
-	WebAuthentication             bool
-	WebUsername                   string
-	WebPassword                   string
+	SSLCertFile       string
+	SSLKeyFile        string
+	SSLPort           int
+	SkipAuthToken     bool
+	Drainer           *events.Drainer
+	WebAuthentication bool
+	WebUsername       string
+	WebPassword       string
 }
 
 type Config struct {
@@ -54,12 +53,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	drainer := &events.Drainer{}
 	db, err := db.NewDB(&db.DBConfig{
 		MongoDBConnectionUri: userConfig.MongoDBConnectionUri,
-		MongoDBName: userConfig.MongoDBName,
-		MongoDBUserName: userConfig.MongoDBUserName,
-		MongoDBPassword: userConfig.MongoDBPassword,
-		MaxConnection: userConfig.MaxConnection,
-		RootCmdLogPath: userConfig.RootCmdLogPath,
-		RootSecret: userConfig.RootSecret,
+		MongoDBName:          userConfig.MongoDBName,
+		MongoDBUserName:      userConfig.MongoDBUserName,
+		MongoDBPassword:      userConfig.MongoDBPassword,
+		MaxConnection:        userConfig.MaxConnection,
+		RootCmdLogPath:       userConfig.RootCmdLogPath,
+		RootSecret:           userConfig.RootSecret,
 	})
 
 	if err != nil {
@@ -67,39 +66,36 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	userController := &controllers.UsersController{
-		Logger:            logger,
-		Drainer:           drainer,
-		DB:                db,
+		Logger:  logger,
+		Drainer: drainer,
+		DB:      db,
 	}
 
 	app := iris.New()
 
-	if err != nil {
-		return nil, err
-	}
-
 	return &Server{
-		Port:                          userConfig.Port,
-		Logger:                        logger,
-		SSLKeyFile:                    userConfig.SSLKeyFile,
-		SSLCertFile:                   userConfig.SSLCertFile,
-		Drainer:                       drainer,
-		UsersController:               userController,
-		App:                           app,
+		Port:            userConfig.Port,
+		Logger:          logger,
+		SSLKeyFile:      userConfig.SSLKeyFile,
+		SSLCertFile:     userConfig.SSLCertFile,
+		SkipAuthToken:   userConfig.SkipAuthToken,
+		Drainer:         drainer,
+		UsersController: userController,
+		App:             app,
 	}, nil
 }
 
-func (s *Server) ControllersInitialize(){
+func (s *Server) ControllersInitialize() {
 	apiVer := "/api/v1"
-	s.App.Get (apiVer + "/status", s.StatusController.Status)
+	s.App.Get(apiVer+"/status", s.StatusController.Status)
 
-	s.App.Get (apiVer + "/users/{userId:string}", s.UsersController.Get)
-	s.App.Post(apiVer + "/users/create", s.UsersController.Create)
-	s.App.Post(apiVer + "/users/create", s.UsersController.Delete)
+	s.App.Get(apiVer+"/users/{userId:string}", s.UsersController.Get)
+	s.App.Post(apiVer+"/users/create", s.UsersController.Create)
+	s.App.Post(apiVer+"/users/create", s.UsersController.Delete)
 
-	s.App.Get (apiVer + "/admin/users", s.AdminController.Users)
-	s.App.Post(apiVer + "/login", s.LoginController.Login)
-	s.App.Post(apiVer + "/logout", s.LoginController.Logout)
+	s.App.Get(apiVer+"/admin/users", s.AdminController.Users)
+	s.App.Post(apiVer+"/login", s.LoginController.Login)
+	s.App.Post(apiVer+"/logout", s.LoginController.Logout)
 }
 
 func (s *Server) Start() error {
@@ -114,17 +110,24 @@ func (s *Server) Start() error {
 		s.Logger.Info("Starship-IaC started - listening on port %v", s.Port)
 
 		var err error
-		s.App.UseGlobal(checkToken)
+		if !s.SkipAuthToken {
+			s.App.UseGlobal(checkToken)
+		}else{
+			s.Logger.Warn("auth token was skipped *** dangious and only can be used in testing/developing phase")
+		}
+
 		if s.SSLCertFile != "" && s.SSLKeyFile != "" {
-
-			err = s.App.Run(iris.TLS(":"+string(s.SSLPort), s.SSLCertFile, s.SSLKeyFile))
+			port := fmt.Sprint(":", s.SSLPort)
+			err = s.App.Run(iris.TLS(port, s.SSLCertFile, s.SSLKeyFile))
 		} else {
-			err = s.App.Run(iris.Addr(":" + string(s.Port)))
+			port := fmt.Sprint(":", s.Port)
+			err = s.App.Run(iris.Addr(port))
 		}
 
-		if err != nil && err != http.ErrServerClosed {
-			s.Logger.Err(err.Error())
+		if err != nil {
+			fmt.Println(err.Error())
 		}
+
 	}()
 	<-stop
 
@@ -156,4 +159,3 @@ func (s *Server) waitForDrain() {
 		}
 	}
 }
-

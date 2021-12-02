@@ -1,4 +1,3 @@
-
 package cmd
 
 import (
@@ -13,17 +12,53 @@ import (
 )
 
 const (
-	// Flag names.
-	LogLevelFlag               = "log-level"
-	SSLCertFileFlag            = "ssl-cert-file"
-	SSLKeyFileFlag             = "ssl-key-file"
-	DefaultLogLevel            = "info"
-	DefaultPort                = 8080
-	DefaultSSLPort			   = 8443
-	ConfigFlag                 = "config"
+	LogLevelFlag      = "log-level"
+	PortFlag          = "port"
+	SSLPortFlag       = "ssl-port"
+	SSLCertFileFlag   = "ssl-cert-file"
+	SSLKeyFileFlag    = "ssl-key-file"
+	SkipAuthTokenFlag = "skip-auth-token"
+
+	MongoDBConnectionUriFlag = "mongodb-connection-uri"
+	MongoDBNameFlag          = "mongodb-name"
+	MongoDBUserNameFlag      = "mongodb-username"
+	MongoDBPasswordFlag      = "mongodb-password"
+	MongoDBMaxConnectionFlag = "mongodb-max-connection"
+	MongoDBRootCmdLogPath    = "mongodb-root-cmd-logpath"
+	MongoDBRootSecret        = "mongodb-root-secret"
+
+	DefaultLogLevel = "info"
+	DefaultPort     = 8080
+	DefaultSSLPort  = 8443
+	ConfigFlag      = "config"
 )
 
 var stringFlags = map[string]stringFlag{
+	MongoDBConnectionUriFlag: {
+		description: "connection uri for mongo db",
+		defaultValue: "mongodb://127.0.0.1:27017",
+	},
+	MongoDBNameFlag: {
+		description: "db name for mongo db",
+		defaultValue: "starship",
+	},
+	MongoDBUserNameFlag: {
+		description: "user for mongo db",
+		defaultValue: "root",
+	},
+	MongoDBPasswordFlag: {
+		description: "password for mongo db",
+		defaultValue: "123456",
+		hidden: true,
+	},
+	MongoDBRootCmdLogPath: {
+		description: "root cmd log path for mongo db",
+		defaultValue: "/logs/cmd/",
+	},
+	MongoDBRootSecret: {
+		description: "root secret for mongo db",
+		defaultValue: "starship",
+	},
 	LogLevelFlag: {
 		description:  "Log level. Either debug, info, warn, or error.",
 		defaultValue: DefaultLogLevel,
@@ -37,13 +72,28 @@ var stringFlags = map[string]stringFlag{
 }
 
 var boolFlags = map[string]boolFlag{
+	SkipAuthTokenFlag: {
+		description:  "Ignore Auth Token - dev only",
+		defaultValue: false,
+		hidden: true,
+	},
 }
 var intFlags = map[string]intFlag{
+	PortFlag: {
+		description: "http port for server",
+		defaultValue: 8080,
+	},
+	SSLPortFlag: {
+		description: "https port for server",
+		defaultValue: 8443,
+	},
+	MongoDBMaxConnectionFlag:{
+		description: "pool size for mongo db",
+		defaultValue: 200,
+	},
 }
 
-var int64Flags = map[string]int64Flag{
-
-}
+var int64Flags = map[string]int64Flag{}
 
 // ValidLogLevels are the valid log levels that can be set
 var ValidLogLevels = []string{"debug", "info", "warn", "error"}
@@ -202,7 +252,7 @@ func (s *ServerCmd) run() error {
 
 	// Config looks good. Start the server.
 	server, err := s.ServerCreator.NewServer(userConfig, server.Config{
-		StarshipVersion:         s.StarshipVersion,
+		StarshipVersion: s.StarshipVersion,
 	})
 	if err != nil {
 		return errors.Wrap(err, "initializing server")
@@ -220,26 +270,26 @@ func (s *ServerCmd) setDefaults(c *server.UserConfig) {
 	if c.SSLPort == 0 {
 		c.SSLPort = DefaultSSLPort
 	}
-	if c.MongoDBConnectionUri == ""{
-		c.MongoDBConnectionUri = ""
+	if c.MongoDBConnectionUri == "" {
+		c.MongoDBConnectionUri = "mongodb://127.0.0.1:27017"
 	}
-	if c.MongoDBName == ""{
-		c.MongoDBName = ""
+	if c.MongoDBName == "" {
+		c.MongoDBName = "starship"
 	}
-	if c.MongoDBUserName == ""{
-		c.MongoDBUserName = ""
+	if c.MongoDBUserName == "" {
+		c.MongoDBUserName = "root"
 	}
-	if c.MongoDBPassword == ""{
-		c.MongoDBPassword = ""
+	if c.MongoDBPassword == "" {
+		c.MongoDBPassword = "123456"
 	}
-	if c.MaxConnection == 0{
-		c.MaxConnection = 20
+	if c.MaxConnection == 0 {
+		c.MaxConnection = 200
 	}
-	if c.RootCmdLogPath == ""{
-		c.RootCmdLogPath = ""
+	if c.RootCmdLogPath == "" {
+		c.RootCmdLogPath = "/logs/cmd/"
 	}
-	if c.RootSecret == ""{
-		c.RootSecret = ""
+	if c.RootSecret == "" {
+		c.RootSecret = "starship"
 	}
 }
 
