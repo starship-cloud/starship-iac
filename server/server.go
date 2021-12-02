@@ -91,7 +91,7 @@ func (s *Server) ControllersInitialize() {
 
 	s.App.Get(apiVer+"/users/{userId:string}", s.UsersController.Get)
 	s.App.Post(apiVer+"/users/create", s.UsersController.Create)
-	s.App.Post(apiVer+"/users/create", s.UsersController.Delete)
+	s.App.Post(apiVer+"/users/delete", s.UsersController.Delete)
 
 	s.App.Get(apiVer+"/admin/users", s.AdminController.Users)
 	s.App.Post(apiVer+"/login", s.LoginController.Login)
@@ -141,7 +141,6 @@ func (s *Server) Start() error {
 	return nil
 }
 
-// waitForDrain blocks until draining is complete.
 func (s *Server) waitForDrain() {
 	drainComplete := make(chan bool, 1)
 	go func() {

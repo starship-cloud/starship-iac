@@ -11,6 +11,7 @@ import (
 
 type CreateUserResp struct {
 	StatusCode uint
+	Reason     string
 	models.UserEntity
 }
 
@@ -19,8 +20,8 @@ type DeleteUserReq struct {
 }
 
 type DeleteUserResp struct {
-	UserId string `json:"userid"`
-	StatusCode  uint `json:"status_code"`
+	UserId     string `json:"userid"`
+	StatusCode uint   `json:"status_code"`
 }
 
 type UsersController struct {
@@ -30,7 +31,7 @@ type UsersController struct {
 }
 
 type deleteUsersResp struct {
-	StatusCode  bool `json:"status_code"`
+	StatusCode bool `json:"status_code"`
 }
 
 func (uc *UsersController) Get(ctx iris.Context) {
@@ -44,13 +45,15 @@ func (uc *UsersController) Create(ctx iris.Context) {
 	if err != nil {
 		uc.Logger.Err(err.Error())
 		ctx.JSON(&CreateUserResp{
-			StatusCode: iris.StatusOK,
-			UserEntity : *result,
+			StatusCode: iris.StatusInternalServerError,
+			Reason: err.Error(),
+			UserEntity: models.UserEntity{},
 		})
-	}else{
+	} else {
 		ctx.JSON(&CreateUserResp{
 			StatusCode: iris.StatusConflict,
-			UserEntity : *result,
+			Reason: "N/A",
+			UserEntity: *result,
 		})
 	}
 }
