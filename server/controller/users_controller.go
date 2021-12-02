@@ -9,20 +9,24 @@ import (
 	"github.com/starship-cloud/starship-iac/server/services"
 )
 
-type CreateUserResp struct {
-	StatusCode uint
-	Reason     string
+
+type UserResp struct {
+	StatusCode  uint
+	Description string
 	models.UserEntity
 }
 
-type DeleteUserReq struct {
-	UserId string `json:"userid"`
-}
-
-type DeleteUserResp struct {
-	UserId     string `json:"userid"`
-	StatusCode uint   `json:"status_code"`
-}
+//type DeleteUserResp struct {
+//	StatusCode  uint
+//	Description string
+//	models.UserEntity
+//}
+//
+//type GetUserResp struct {
+//	StatusCode  uint
+//	Description string
+//	models.UserEntity
+//}
 
 type UsersController struct {
 	Logger  logging.SimpleLogging
@@ -35,29 +39,90 @@ type deleteUsersResp struct {
 }
 
 func (uc *UsersController) Get(ctx iris.Context) {
+	var userReq models.UserEntity
+	ctx.ReadJSON(&userReq)
 
+	result, err := users_service.GetUser(&userReq, uc.DB)
+	if err != nil {
+		uc.Logger.Err(err.Error())
+		ctx.JSON(&UserResp{
+			StatusCode:  iris.StatusInternalServerError,
+			Description: err.Error(),
+			UserEntity:  models.UserEntity{},
+		})
+	} else {
+		if result != nil {
+			ctx.JSON(&UserResp{
+				StatusCode:  iris.StatusOK,
+				Description: "found",
+				UserEntity:  *result,
+			})
+		}else{
+			ctx.JSON(&UserResp{
+				StatusCode:  iris.StatusNotFound,
+				Description: "Not found",
+				UserEntity:  models.UserEntity{UserId: userReq.UserId},
+			})
+		}
+	}
 }
 
 func (uc *UsersController) Create(ctx iris.Context) {
-	var createUserReq models.UserEntity
-	ctx.ReadJSON(&createUserReq)
-	result, err := users_service.CreateUser(&createUserReq, uc.DB)
+	var userReq models.UserEntity
+	ctx.ReadJSON(&userReq)
+	result, err := users_service.CreateUser(&userReq, uc.DB)
 	if err != nil {
 		uc.Logger.Err(err.Error())
-		ctx.JSON(&CreateUserResp{
-			StatusCode: iris.StatusInternalServerError,
-			Reason: err.Error(),
-			UserEntity: models.UserEntity{},
+		ctx.JSON(&UserResp{
+			StatusCode:  iris.StatusInternalServerError,
+			Description: err.Error(),
+			UserEntity:  models.UserEntity{},
 		})
 	} else {
-		ctx.JSON(&CreateUserResp{
-			StatusCode: iris.StatusConflict,
-			Reason: "N/A",
-			UserEntity: *result,
+		ctx.JSON(&UserResp{
+			StatusCode:  iris.StatusOK,
+			Description: "created",
+			UserEntity:  *result,
 		})
 	}
 }
 
 func (uc *UsersController) Delete(ctx iris.Context) {
+	var userReq models.UserEntity
+	ctx.ReadJSON(&userReq)
+	_, err := users_service.DeleteUser(&userReq, uc.DB)
+	if err != nil {
+		uc.Logger.Err(err.Error())
+		ctx.JSON(&UserResp{
+			StatusCode:  iris.StatusInternalServerError,
+			Description: err.Error(),
+			UserEntity:  models.UserEntity{UserId: userReq.UserId},
+		})
+	} else {
+		ctx.JSON(&UserResp{
+			StatusCode:  iris.StatusOK,
+			Description: "deleted",
+			UserEntity:  models.UserEntity{UserId: userReq.UserId},
+		})
+	}
+}
 
+func (uc *UsersController) Update(ctx iris.Context) {
+	var userReq models.UserEntity
+	ctx.ReadJSON(&userReq)
+	_, err := users_service.UpdateUser(&userReq, uc.DB)
+	if err != nil {
+		uc.Logger.Err(err.Error())
+		ctx.JSON(&UserResp{
+			StatusCode:  iris.StatusInternalServerError,
+			Description: err.Error(),
+			UserEntity:  models.UserEntity{UserId: userReq.UserId},
+		})
+	} else {
+		ctx.JSON(&UserResp{
+			StatusCode:  iris.StatusOK,
+			Description: "deleted",
+			UserEntity:  models.UserEntity{UserId: userReq.UserId},
+		})
+	}
 }

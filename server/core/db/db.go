@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/starship-cloud/starship-iac/utils"
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var collection *mongo.Collection
+//var collection *mongo.Collection
 
 //refactor
 type DBConfig struct {
@@ -50,93 +50,63 @@ func NewDB (dbConfig *DBConfig) (*MongoDB, error) {
 	}, err
 }
 
-func (d *MongoDB)Init() (err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	clientOptions := options.Client().ApplyURI(utils.MongoDBConnectionUri)
-	clientOptions.SetMaxPoolSize(utils.MaxConnection)
-	credential := options.Credential{
-		Username: utils.MongoDBUserName,
-		Password: utils.MongoDBPassword,
-	}
-	clientOptions.SetAuth(credential)
-	db, err := mongo.Connect(ctx, clientOptions)
-	collection = db.Database(utils.MongoDBName).Collection(utils.MongoDBName)
-	if err != nil {
-		fmt.Println("MongoDb connect success!")
-	}
-	return err
-}
-
-func (d *MongoDB)Insert(data interface{}) bool {
+func (d *MongoDB)Insert(collection *mongo.Collection, data interface{}) (*mongo.InsertOneResult, error) {
 	objId, err := collection.InsertOne(context.TODO(), data)
 
 	if err != nil {
-		log.Println(err)
-		return false
+		return nil, errors.WithMessage(err, "insert one item failed.")
 	}
 	log.Println("action->insert,objId:", objId)
-	return true
+	return objId, err
 }
 
-func (d *MongoDB)Delete(collection *mongo.Collection, m bson.M) bool {
+func (d *MongoDB)Delete(collection *mongo.Collection, m bson.M) (*mongo.DeleteResult, error) {
 	deleteResult, err := collection.DeleteOne(context.Background(), m)
 	if err != nil {
-		log.Println(err)
-		return false
+		return nil, errors.WithMessage(err, "delete one item failed.")
 	}
-	log.Println("action->delete,:", deleteResult)
-	return true
+	return deleteResult, err
 }
 
-func (d *MongoDB)UpdateOrSave(collection *mongo.Collection, target interface{}, filter bson.M) bool {
+func (d *MongoDB)UpdateOrSave(collection *mongo.Collection, target interface{}, filter bson.M) (*mongo.UpdateResult, error) {
 	update := bson.M{"$set": target}
 	updateOpts := options.Update().SetUpsert(true)
 	updateResult, err := collection.UpdateOne(context.Background(), filter, update, updateOpts)
 	if err != nil {
-		log.Println(err)
-		return false
+		return nil, errors.WithMessage(err, "update/save one item failed.")
 	}
-	log.Println("action->update,:", updateResult)
-	return true
+	return updateResult, err
 }
 
-func (d *MongoDB)Update(collection *mongo.Collection, target *interface{}, filter bson.M) bool {
+func (d *MongoDB)Update(collection *mongo.Collection, target *interface{}, filter bson.M) (*mongo.UpdateResult, error) {
 	update := bson.M{"$set": target}
 	updateResult, err := collection.UpdateMany(context.Background(), filter, update)
 	if err != nil {
-		log.Println(err)
-		return false
+		return nil, errors.WithMessage(err, "update one item failed.")
 	}
-	log.Println("action->update,:", updateResult)
-	return true
+	return updateResult, err
 }
 
-func (d *MongoDB)GetOne(collection *mongo.Collection, m bson.M) interface{} {
+func (d *MongoDB)GetOne(collection *mongo.Collection, m bson.M) (interface{}, error) {
 	var one interface{}
 	err := collection.FindOne(context.Background(), m).Decode(&one)
 	if err != nil {
-		log.Println(err)
-		return nil
+		return nil, errors.WithMessage(err, "get one item failed.")
 	}
-	log.Println("action->find one,: ", one)
-	return one
+	return one, err
 }
 
-func (d *MongoDB)GetList(collection *mongo.Collection, m bson.M) []*interface{} {
+func (d *MongoDB)GetList(collection *mongo.Collection, m bson.M) ([]*interface{}, error) {
 	var list []*interface{}
 	cursor, err := collection.Find(context.Background(), m)
 	if err != nil {
-		log.Println(err)
-		return nil
+		return nil, errors.WithMessage(err, "get list many items failed.")
 	}
 	err = cursor.All(context.Background(), &list)
 	if err != nil {
-		log.Println(err)
-		return nil
+		return nil, errors.WithMessage(err, "get list many items failed.")
 	}
 	_ = cursor.Close(context.Background())
 
-	log.Println("action->find list,: ", list)
-	return list
+	return list, err
 }
