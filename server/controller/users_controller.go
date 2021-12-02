@@ -30,7 +30,9 @@ func (uc *UsersController) Get(ctx iris.Context) {
 	var userReq models.UserEntity
 	ctx.ReadJSON(&userReq)
 
-	result, err := users_service.GetUser(&userReq, uc.DB)
+	userId := ctx.Params().Get("userid")
+
+	result, err := users_service.GetUser(userId, uc.DB)
 	if err != nil {
 		uc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{

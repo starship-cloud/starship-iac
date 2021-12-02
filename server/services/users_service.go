@@ -13,14 +13,14 @@ const (
 	DB_COLLECTION = "users"
 )
 
-func GetUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, error){
+func GetUser(userId string, db *db.MongoDB) (*models.UserEntity, error){
 	collection := db.DBClient.Database(DB_NAME).Collection(DB_COLLECTION)
 
-	filter := bson.M{"userid": user.Userid}
+	filter := bson.M{"userid": userId}
 	result, err := db.GetOne(collection, filter)
 
 	if err != nil {
-		return nil, fmt.Errorf("get user with user id %s failed due to DB operation", user.Userid)
+		return nil, fmt.Errorf("get user with user id %s failed due to DB operation", userId)
 	}else if result != nil{
 		return result.(*models.UserEntity), nil
 	}else{
