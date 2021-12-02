@@ -16,18 +16,6 @@ type UserResp struct {
 	models.UserEntity
 }
 
-//type DeleteUserResp struct {
-//	StatusCode  uint
-//	Description string
-//	models.UserEntity
-//}
-//
-//type GetUserResp struct {
-//	StatusCode  uint
-//	Description string
-//	models.UserEntity
-//}
-
 type UsersController struct {
 	Logger  logging.SimpleLogging
 	Drainer *events.Drainer
@@ -61,7 +49,7 @@ func (uc *UsersController) Get(ctx iris.Context) {
 			ctx.JSON(&UserResp{
 				StatusCode:  iris.StatusNotFound,
 				Description: "Not found",
-				UserEntity:  models.UserEntity{UserId: userReq.UserId},
+				UserEntity:  models.UserEntity{Userid: userReq.Userid},
 			})
 		}
 	}
@@ -96,13 +84,13 @@ func (uc *UsersController) Delete(ctx iris.Context) {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			UserEntity:  models.UserEntity{UserId: userReq.UserId},
+			UserEntity:  models.UserEntity{Userid: userReq.Userid},
 		})
 	} else {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusOK,
 			Description: "deleted",
-			UserEntity:  models.UserEntity{UserId: userReq.UserId},
+			UserEntity:  models.UserEntity{Userid: userReq.Userid},
 		})
 	}
 }
@@ -116,13 +104,13 @@ func (uc *UsersController) Update(ctx iris.Context) {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			UserEntity:  models.UserEntity{UserId: userReq.UserId},
+			UserEntity:  models.UserEntity{Userid: userReq.Userid},
 		})
 	} else {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusOK,
 			Description: "deleted",
-			UserEntity:  models.UserEntity{UserId: userReq.UserId},
+			UserEntity:  models.UserEntity{Userid: userReq.Userid},
 		})
 	}
 }
