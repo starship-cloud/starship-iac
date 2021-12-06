@@ -8,6 +8,6 @@ type UserEntity struct {
 	Externaluser string `json:"externaluser"`
 	UserLocal    bool   `json:"userlocal"`
 	Salt         string `json:"salt"`
-	CreateAt     int    `json:"create_at"`
-	UpdateAt     int    `json:"update_at"`
+	CreateAt     int64  `json:"create_at"`
+	UpdateAt     int64  `json:"update_at"`
 }

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/kataras/iris/v12"
 	"github.com/starship-cloud/starship-iac/server/core/db"
 	"github.com/starship-cloud/starship-iac/server/events"
@@ -9,18 +10,17 @@ import (
 	"github.com/starship-cloud/starship-iac/server/services"
 )
 
-
 type UserResp struct {
 	StatusCode  uint
 	Description string
-	models.UserEntity
+	Data        models.UserEntity
 }
 
 type userEntities []*models.UserEntity
 type UsersResp struct {
 	StatusCode  uint
 	Description string
-	userEntities
+	Data        userEntities
 }
 
 type UsersController struct {
@@ -45,20 +45,20 @@ func (uc *UsersController) Get(ctx iris.Context) {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			UserEntity:  models.UserEntity{},
+			Data:        models.UserEntity{},
 		})
 	} else {
 		if result != nil {
 			ctx.JSON(&UserResp{
 				StatusCode:  iris.StatusOK,
 				Description: "found",
-				UserEntity:  *result,
+				Data:        *result,
 			})
-		}else{
+		} else {
 			ctx.JSON(&UserResp{
 				StatusCode:  iris.StatusNotFound,
 				Description: "Not found",
-				UserEntity:  models.UserEntity{Userid: userReq.Userid},
+				Data:        models.UserEntity{Userid: userReq.Userid},
 			})
 		}
 	}
@@ -73,13 +73,13 @@ func (uc *UsersController) Create(ctx iris.Context) {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			UserEntity:  models.UserEntity{},
+			Data:        models.UserEntity{Username: userReq.Username},
 		})
 	} else {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusOK,
 			Description: "created",
-			UserEntity:  *result,
+			Data:        *result,
 		})
 	}
 }
@@ -93,13 +93,13 @@ func (uc *UsersController) Delete(ctx iris.Context) {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			UserEntity:  models.UserEntity{Userid: userReq.Userid},
+			Data:        models.UserEntity{Userid: userReq.Userid},
 		})
 	} else {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusOK,
 			Description: "deleted",
-			UserEntity:  models.UserEntity{Userid: userReq.Userid},
+			Data:        models.UserEntity{Userid: userReq.Userid},
 		})
 	}
 }
@@ -113,22 +113,19 @@ func (uc *UsersController) Update(ctx iris.Context) {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			UserEntity:  models.UserEntity{Userid: userReq.Userid},
+			Data:        models.UserEntity{Userid: userReq.Userid},
 		})
 	} else {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusOK,
 			Description: "updated",
-			UserEntity:  models.UserEntity{Userid: userReq.Userid},
+			Data:        models.UserEntity{Userid: userReq.Userid},
 		})
 	}
 }
 
 func (uc *UsersController) Search(ctx iris.Context) {
-	var userReq models.UserEntity
-	ctx.ReadJSON(&userReq)
-
-	userName := ctx.Params().Get("username")
+	userName :=  ctx.URLParam("username")
 
 	result, err := users_service.SearchUsers(userName, uc.DB)
 	if err != nil {
@@ -136,26 +133,21 @@ func (uc *UsersController) Search(ctx iris.Context) {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			UserEntity:  models.UserEntity{},
+			Data:        models.UserEntity{},
 		})
 	} else {
 		if result != nil {
 			ctx.JSON(&UsersResp{
 				StatusCode:  iris.StatusOK,
 				Description: "found",
-				userEntities:  result,
+				Data:        result,
 			})
-		}else{
+		} else {
 			ctx.JSON(&UserResp{
 				StatusCode:  iris.StatusNotFound,
 				Description: "Not found",
-				UserEntity:  models.UserEntity{Userid: userReq.Username},
+				Data:        models.UserEntity{Userid: userReq.Username},
 			})
 		}
 	}
 }
-
-
-
-
-

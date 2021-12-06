@@ -7,7 +7,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
 	"time"
 )
 
@@ -56,7 +55,6 @@ func (d *MongoDB)Insert(collection *mongo.Collection, data interface{}) (*mongo.
 	if err != nil {
 		return nil, errors.WithMessage(err, "insert one item failed.")
 	}
-	log.Println("action->insert,objId:", objId)
 	return objId, err
 }
 
@@ -87,26 +85,24 @@ func (d *MongoDB)Update(collection *mongo.Collection, target *interface{}, filte
 	return updateResult, err
 }
 
-func (d *MongoDB)GetOne(collection *mongo.Collection, m bson.M) (interface{}, error) {
-	var one interface{}
-	err := collection.FindOne(context.Background(), m).Decode(&one)
+func (d *MongoDB)GetOne(collection *mongo.Collection, m bson.M, rtn interface{}) (error) {
+	err := collection.FindOne(context.Background(), m).Decode(rtn)
 	if err != nil {
-		return nil, errors.WithMessage(err, "get one item failed.")
+		return errors.WithMessage(err, "get one item failed.")
 	}
-	return one, err
+	return err
 }
 
-func (d *MongoDB)GetList(collection *mongo.Collection, m bson.M) ([]*interface{}, error) {
-	var list []*interface{}
+func (d *MongoDB)GetList(collection *mongo.Collection, m bson.M, list interface{}) error {
 	cursor, err := collection.Find(context.Background(), m)
 	if err != nil {
-		return nil, errors.WithMessage(err, "get list many items failed.")
+		return errors.WithMessage(err, "get list many items failed.")
 	}
-	err = cursor.All(context.Background(), &list)
+	err = cursor.All(context.Background(), list)
 	if err != nil {
-		return nil, errors.WithMessage(err, "get list many items failed.")
+		return errors.WithMessage(err, "get list many items failed.")
 	}
 	_ = cursor.Close(context.Background())
 
-	return list, err
+	return err
 }

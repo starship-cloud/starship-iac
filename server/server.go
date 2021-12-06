@@ -92,6 +92,7 @@ func (s *Server) ControllersInitialize() {
 	s.App.Get(apiVer+"/users/{userId:string}", s.UsersController.Get)
 	s.App.Post(apiVer+"/users/create", s.UsersController.Create)
 	s.App.Post(apiVer+"/users/delete", s.UsersController.Delete)
+	s.App.Get(apiVer+"/users/search", s.UsersController.Search)
 
 	s.App.Get(apiVer+"/admin/users", s.AdminController.Users)
 	s.App.Post(apiVer+"/login", s.LoginController.Login)
