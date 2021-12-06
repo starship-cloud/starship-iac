@@ -16,6 +16,13 @@ type UserResp struct {
 	models.UserEntity
 }
 
+type userEntities []*models.UserEntity
+type UsersResp struct {
+	StatusCode  uint
+	Description string
+	userEntities
+}
+
 type UsersController struct {
 	Logger  logging.SimpleLogging
 	Drainer *events.Drainer
@@ -111,8 +118,44 @@ func (uc *UsersController) Update(ctx iris.Context) {
 	} else {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusOK,
-			Description: "deleted",
+			Description: "updated",
 			UserEntity:  models.UserEntity{Userid: userReq.Userid},
 		})
 	}
 }
+
+func (uc *UsersController) Search(ctx iris.Context) {
+	var userReq models.UserEntity
+	ctx.ReadJSON(&userReq)
+
+	userName := ctx.Params().Get("username")
+
+	result, err := users_service.SearchUsers(userName, uc.DB)
+	if err != nil {
+		uc.Logger.Err(err.Error())
+		ctx.JSON(&UserResp{
+			StatusCode:  iris.StatusInternalServerError,
+			Description: err.Error(),
+			UserEntity:  models.UserEntity{},
+		})
+	} else {
+		if result != nil {
+			ctx.JSON(&UsersResp{
+				StatusCode:  iris.StatusOK,
+				Description: "found",
+				userEntities:  result,
+			})
+		}else{
+			ctx.JSON(&UserResp{
+				StatusCode:  iris.StatusNotFound,
+				Description: "Not found",
+				UserEntity:  models.UserEntity{Userid: userReq.Username},
+			})
+		}
+	}
+}
+
+
+
+
+

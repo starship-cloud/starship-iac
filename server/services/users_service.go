@@ -29,7 +29,6 @@ func GetUser(userId string, db *db.MongoDB) (*models.UserEntity, error){
 	}
 }
 
-
 func CreateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity ,error){
 	collection := db.DBClient.Database(DB_NAME).Collection(DB_COLLECTION)
 
@@ -95,5 +94,27 @@ func UpdateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity ,er
 		}
 	}else{
 		return nil, fmt.Errorf("the user wit user id %s not exist.", user.Userid)
+	}
+}
+
+func SearchUsers(userName string, db *db.MongoDB) ([]*models.UserEntity, error){
+	//TODO: support regex search
+	collection := db.DBClient.Database(DB_NAME).Collection(DB_COLLECTION)
+
+	filter := bson.M{"username": userName}
+	result, err := db.GetList(collection, filter)
+
+	if err != nil {
+		return nil, fmt.Errorf("get user %s failed due to DB operation", userName)
+	}else if result != nil{
+		s := make([]*models.UserEntity, len(result))
+		for i, v := range result {
+			s[i] = (*v).(*models.UserEntity)
+		}
+
+		return s, nil
+	}else{
+		//not found
+		return nil, nil
 	}
 }
