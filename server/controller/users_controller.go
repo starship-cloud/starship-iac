@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/kataras/iris/v12"
 	"github.com/starship-cloud/starship-iac/server/core/db"
 	"github.com/starship-cloud/starship-iac/server/events"
@@ -16,11 +15,10 @@ type UserResp struct {
 	Data        models.UserEntity
 }
 
-type userEntities []*models.UserEntity
 type UsersResp struct {
 	StatusCode  uint
 	Description string
-	Data        userEntities
+	Data        []models.UserEntity
 }
 
 type UsersController struct {
@@ -133,7 +131,7 @@ func (uc *UsersController) Search(ctx iris.Context) {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			Data:        models.UserEntity{},
+			Data:        models.UserEntity{Username: userName},
 		})
 	} else {
 		if result != nil {
@@ -146,7 +144,7 @@ func (uc *UsersController) Search(ctx iris.Context) {
 			ctx.JSON(&UserResp{
 				StatusCode:  iris.StatusNotFound,
 				Description: "Not found",
-				Data:        models.UserEntity{Userid: userReq.Username},
+				Data:        models.UserEntity{Username: userName},
 			})
 		}
 	}

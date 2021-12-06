@@ -124,15 +124,21 @@ func UpdateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, er
 }
 
 func SearchUsers(userName string, db *db.MongoDB) ([]models.UserEntity, error) {
-	//TODO: support regex search
 	collection := db.DBClient.Database(DB_NAME).Collection(DB_COLLECTION)
 	var users []models.UserEntity
-	filter := bson.M{"username": userName}
+	filter := bson.M{
+		"username": bson.M{
+			"$regex":   userName,
+			"$options": "i",
+		},
+	}
+
+	//filter := bson.M{"$regex": primitive.Regex{Pattern: ".*" + userName + ".*", Options: "i",}}
 	db.GetList(collection, filter, &users)
 
 	if len(users) == 0 {
 		return nil, fmt.Errorf("get user %s failed due to DB operation", userName)
-	}else{
+	} else {
 		return users, nil
 	}
 }
