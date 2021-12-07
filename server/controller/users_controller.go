@@ -7,6 +7,7 @@ import (
 	"github.com/starship-cloud/starship-iac/server/events/models"
 	"github.com/starship-cloud/starship-iac/server/logging"
 	"github.com/starship-cloud/starship-iac/server/services"
+	"strconv"
 )
 
 type UserResp struct {
@@ -124,8 +125,15 @@ func (uc *UsersController) Update(ctx iris.Context) {
 
 func (uc *UsersController) Search(ctx iris.Context) {
 	userName :=  ctx.URLParam("username")
+	page_index, _ := strconv.Atoi(ctx.URLParam("page_index"))
+	page_limit, _ := strconv.Atoi(ctx.URLParam("page_limit"))
 
-	result, err := users_service.SearchUsers(userName, uc.DB)
+	pageinOption := &models.PaginOption{
+		Limit: int64(page_limit),
+		Index: int64(page_index),
+	}
+
+	result, err := users_service.SearchUsers(userName, uc.DB, pageinOption)
 	if err != nil {
 		uc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{

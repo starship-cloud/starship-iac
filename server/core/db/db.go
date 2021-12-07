@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/starship-cloud/starship-iac/server/events/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -24,10 +25,10 @@ type DBConfig struct {
 }
 
 type MongoDB struct {
-	DBClient                   *mongo.Client
+	DBClient *mongo.Client
 }
 
-func NewDB (dbConfig *DBConfig) (*MongoDB, error) {
+func NewDB(dbConfig *DBConfig) (*MongoDB, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -45,11 +46,11 @@ func NewDB (dbConfig *DBConfig) (*MongoDB, error) {
 	}
 
 	return &MongoDB{
-		DBClient:   client,
+		DBClient: client,
 	}, err
 }
 
-func (d *MongoDB)Insert(collection *mongo.Collection, data interface{}) (*mongo.InsertOneResult, error) {
+func (d *MongoDB) Insert(collection *mongo.Collection, data interface{}) (*mongo.InsertOneResult, error) {
 	objId, err := collection.InsertOne(context.TODO(), data)
 
 	if err != nil {
@@ -58,7 +59,7 @@ func (d *MongoDB)Insert(collection *mongo.Collection, data interface{}) (*mongo.
 	return objId, err
 }
 
-func (d *MongoDB)Delete(collection *mongo.Collection, m bson.M) (*mongo.DeleteResult, error) {
+func (d *MongoDB) Delete(collection *mongo.Collection, m bson.M) (*mongo.DeleteResult, error) {
 	deleteResult, err := collection.DeleteOne(context.Background(), m)
 	if err != nil {
 		return nil, errors.WithMessage(err, "delete one item failed.")
@@ -66,7 +67,7 @@ func (d *MongoDB)Delete(collection *mongo.Collection, m bson.M) (*mongo.DeleteRe
 	return deleteResult, err
 }
 
-func (d *MongoDB)UpdateOrSave(collection *mongo.Collection, target interface{}, filter bson.M) (*mongo.UpdateResult, error) {
+func (d *MongoDB) UpdateOrSave(collection *mongo.Collection, target interface{}, filter bson.M) (*mongo.UpdateResult, error) {
 	update := bson.M{"$set": target}
 	updateOpts := options.Update().SetUpsert(true)
 	updateResult, err := collection.UpdateOne(context.Background(), filter, update, updateOpts)
@@ -76,7 +77,7 @@ func (d *MongoDB)UpdateOrSave(collection *mongo.Collection, target interface{}, 
 	return updateResult, err
 }
 
-func (d *MongoDB)Update(collection *mongo.Collection, target *interface{}, filter bson.M) (*mongo.UpdateResult, error) {
+func (d *MongoDB) Update(collection *mongo.Collection, target *interface{}, filter bson.M) (*mongo.UpdateResult, error) {
 	update := bson.M{"$set": target}
 	updateResult, err := collection.UpdateMany(context.Background(), filter, update)
 	if err != nil {
@@ -85,7 +86,7 @@ func (d *MongoDB)Update(collection *mongo.Collection, target *interface{}, filte
 	return updateResult, err
 }
 
-func (d *MongoDB)GetOne(collection *mongo.Collection, m bson.M, rtn interface{}) (error) {
+func (d *MongoDB) GetOne(collection *mongo.Collection, m bson.M, rtn interface{}) error {
 	err := collection.FindOne(context.Background(), m).Decode(rtn)
 	if err != nil {
 		return errors.WithMessage(err, "get one item failed.")
@@ -93,8 +94,19 @@ func (d *MongoDB)GetOne(collection *mongo.Collection, m bson.M, rtn interface{})
 	return err
 }
 
-func (d *MongoDB)GetList(collection *mongo.Collection, m bson.M, list interface{}) error {
-	cursor, err := collection.Find(context.Background(), m)
+func (d *MongoDB) GetList(collection *mongo.Collection, m bson.M, list interface{}, opts ...models.PaginOption) error {
+	findOptions := &options.FindOptions{}
+	if len(opts) > 0 {
+		for _, opt := range opts {
+			findOptions.SetLimit(opt.Limit)
+			findOptions.SetSkip(opt.Index * opt.Limit)
+			break
+		}
+	} else {
+		findOptions.SetLimit(models.DefaultPageLimit)
+	}
+
+	cursor, err := collection.Find(context.Background(), m, findOptions)
 	if err != nil {
 		return errors.WithMessage(err, "get list many items failed.")
 	}

@@ -123,7 +123,7 @@ func UpdateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, er
 	}
 }
 
-func SearchUsers(userName string, db *db.MongoDB) ([]models.UserEntity, error) {
+func SearchUsers(userName string, db *db.MongoDB, pageinOpt *models.PaginOption) ([]models.UserEntity, error) {
 	collection := db.DBClient.Database(DB_NAME).Collection(DB_COLLECTION)
 	var users []models.UserEntity
 	filter := bson.M{
@@ -133,8 +133,7 @@ func SearchUsers(userName string, db *db.MongoDB) ([]models.UserEntity, error) {
 		},
 	}
 
-	//filter := bson.M{"$regex": primitive.Regex{Pattern: ".*" + userName + ".*", Options: "i",}}
-	db.GetList(collection, filter, &users)
+	db.GetList(collection, filter, &users, *pageinOpt)
 
 	if len(users) == 0 {
 		return nil, fmt.Errorf("get user %s failed due to DB operation", userName)
