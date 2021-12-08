@@ -1,4 +1,4 @@
-package users_service
+package service
 
 import (
 	"fmt"
@@ -7,17 +7,30 @@ import (
 	"github.com/starship-cloud/starship-iac/server/events/models"
 	"github.com/starship-cloud/starship-iac/utils"
 	"go.mongodb.org/mongo-driver/bson"
+	"golang.org/x/crypto/bcrypt"
 	"strings"
 	"time"
 )
 
-const (
-	DB_NAME       = "starship"
-	DB_COLLECTION = "users"
-)
+func GetUserByNmae(userName string, db *db.MongoDB) (*models.UserEntity, error) {
+	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
 
-func GetUser(userId string, db *db.MongoDB) (*models.UserEntity, error) {
-	collection := db.DBClient.Database(DB_NAME).Collection(DB_COLLECTION)
+	filter := bson.M{"username": userName}
+	userEntity := &models.UserEntity{}
+	err := db.GetOne(collection, filter, &userEntity)
+
+	if err != nil {
+		return nil, fmt.Errorf("get user %s failed due to DB operation", userName)
+	} else if userEntity.Userid != "" {
+		return userEntity, nil
+	} else {
+		//not found
+		return nil, nil
+	}
+}
+
+func GetUserByUserId(userId string, db *db.MongoDB) (*models.UserEntity, error) {
+	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
 
 	filter := bson.M{"userid": userId}
 
@@ -35,7 +48,7 @@ func GetUser(userId string, db *db.MongoDB) (*models.UserEntity, error) {
 }
 
 func CreateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, error) {
-	collection := db.DBClient.Database(DB_NAME).Collection(DB_COLLECTION)
+	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
 	userEntity := &models.UserEntity{}
 
 	filter := bson.M{"username": user.Username}
@@ -47,46 +60,27 @@ func CreateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, er
 		userId := utils.GenUserId()
 		t := time.Now().Unix()
 
-		newUser := &models.UserEntity{
-			Userid:    userId,
-			Username:  user.Username,
-			Email:     user.Email,
-			Password:  user.Password,
-			UserLocal: true,
-			CreateAt:  t,
-			UpdateAt:  t,
-		}
-
-		_, err := db.Insert(collection, newUser)
-		if err != nil {
-			return nil, fmt.Errorf("save user %s failed due to DB operation", user.Username)
+		if hash, err := bcrypt.GenerateFromPassword([]byte(userEntity.Password), bcrypt.DefaultCost); err != nil {
+			return nil, fmt.Errorf("create user %s failed due to hash computing", user.Username)
 		} else {
-			return newUser, nil
+			newUser := &models.UserEntity{
+				Userid:    userId,
+				Username:  user.Username,
+				Email:     user.Email,
+				Password:  string(hash),
+				UserLocal: true,
+				CreateAt:  t,
+				UpdateAt:  t,
+			}
+
+			_, err := db.Insert(collection, newUser)
+			if err != nil {
+				return nil, fmt.Errorf("save user %s failed due to DB operation", user.Username)
+			} else {
+				return newUser, nil
+			}
 		}
 	}
-}
-
-func DeleteUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, error) {
-	if len(strings.TrimSpace(user.Userid)) == 0 {
-		return nil, errors.New("userid is required.")
-	}
-
-	collection := db.DBClient.Database(DB_NAME).Collection(DB_COLLECTION)
-
-	userEntity := &models.UserEntity{}
-	filter := bson.M{"userid": user.Userid}
-	err := db.GetOne(collection, filter, userEntity)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "delete failed")
-	} else if userEntity.Userid != "" {
-		//found, delete
-		_, err := db.Delete(collection, filter)
-		return nil, err
-	} else {
-		return nil, fmt.Errorf("the user with user id: %s has been deleted.", user.Userid)
-	}
-
 }
 
 func UpdateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, error) {
@@ -96,7 +90,7 @@ func UpdateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, er
 		return nil, errors.New("userid/username/email are required.")
 	}
 
-	collection := db.DBClient.Database(DB_NAME).Collection(DB_COLLECTION)
+	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
 	userEntity := &models.UserEntity{}
 	filter := bson.M{"userid": user.Userid}
 
@@ -123,8 +117,31 @@ func UpdateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, er
 	}
 }
 
+func DeleteUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, error) {
+	if len(strings.TrimSpace(user.Userid)) == 0 {
+		return nil, errors.New("userid is required.")
+	}
+
+	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
+
+	userEntity := &models.UserEntity{}
+	filter := bson.M{"userid": user.Userid}
+	err := db.GetOne(collection, filter, userEntity)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "delete failed")
+	} else if userEntity.Userid != "" {
+		//found, delete
+		_, err := db.Delete(collection, filter)
+		return nil, err
+	} else {
+		return nil, fmt.Errorf("the user with user id: %s has been deleted.", user.Userid)
+	}
+
+}
+
 func SearchUsers(userName string, db *db.MongoDB, pageinOpt *models.PaginOption) ([]models.UserEntity, error) {
-	collection := db.DBClient.Database(DB_NAME).Collection(DB_COLLECTION)
+	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
 	var users []models.UserEntity
 	filter := bson.M{
 		"username": bson.M{
@@ -138,6 +155,7 @@ func SearchUsers(userName string, db *db.MongoDB, pageinOpt *models.PaginOption)
 	if len(users) == 0 {
 		return nil, fmt.Errorf("get user %s failed due to DB operation", userName)
 	} else {
+
 		return users, nil
 	}
 }

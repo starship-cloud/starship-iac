@@ -22,14 +22,83 @@ type UsersResp struct {
 	Data        []models.UserEntity
 }
 
+type AuthResp struct {
+	StatusCode  uint
+	Description string
+	Data        models.AuthEntity
+}
+
+///////
+
 type UsersController struct {
 	Logger  logging.SimpleLogging
 	Drainer *events.Drainer
 	DB      *db.MongoDB
 }
 
-type deleteUsersResp struct {
-	StatusCode bool `json:"status_code"`
+func (uc *UsersController) Login(ctx iris.Context) {
+	var userReq models.UserEntity
+	ctx.ReadJSON(&userReq)
+
+	user, err := service.GetUserByNmae(userReq.Username, uc.DB)
+	if err != nil {
+		uc.Logger.Err(err.Error())
+		ctx.JSON(&UserResp{
+			StatusCode:  iris.StatusInternalServerError,
+			Description: err.Error(),
+			Data:        models.UserEntity{},
+		})
+	} else {
+		if user != nil {
+			//found
+			//compare hash by Hashed(password) == user.Password
+			// if not return AuthResp with 401
+			// else create auth token and return 200 with an AuthResp
+
+			ctx.JSON(&AuthResp{
+				StatusCode:  iris.StatusOK,
+				Description: "found",
+				Data: models.AuthEntity{Userid: user.Userid, AuthToken: ""},
+			})
+		} else {
+			ctx.JSON(&UserResp{
+				StatusCode:  iris.StatusNotFound,
+				Description: "user not found",
+				Data:        models.UserEntity{Userid: userReq.Userid},
+			})
+		}
+	}
+}
+
+func (uc *UsersController) Loginoff(ctx iris.Context) {
+	var userReq models.UserEntity
+	ctx.ReadJSON(&userReq)
+
+	userId := ctx.Params().Get("userid")
+
+	result, err := service.GetUserByUserId(userId, uc.DB)
+	if err != nil {
+		uc.Logger.Err(err.Error())
+		ctx.JSON(&UserResp{
+			StatusCode:  iris.StatusInternalServerError,
+			Description: err.Error(),
+			Data:        models.UserEntity{},
+		})
+	} else {
+		if result != nil {
+			ctx.JSON(&UserResp{
+				StatusCode:  iris.StatusOK,
+				Description: "found",
+				Data:        *result,
+			})
+		} else {
+			ctx.JSON(&UserResp{
+				StatusCode:  iris.StatusNotFound,
+				Description: "Not found",
+				Data:        models.UserEntity{Userid: userReq.Userid},
+			})
+		}
+	}
 }
 
 func (uc *UsersController) Get(ctx iris.Context) {
@@ -38,7 +107,7 @@ func (uc *UsersController) Get(ctx iris.Context) {
 
 	userId := ctx.Params().Get("userid")
 
-	result, err := users_service.GetUser(userId, uc.DB)
+	result, err := service.GetUserByUserId(userId, uc.DB)
 	if err != nil {
 		uc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{
@@ -66,7 +135,7 @@ func (uc *UsersController) Get(ctx iris.Context) {
 func (uc *UsersController) Create(ctx iris.Context) {
 	var userReq models.UserEntity
 	ctx.ReadJSON(&userReq)
-	result, err := users_service.CreateUser(&userReq, uc.DB)
+	result, err := service.CreateUser(&userReq, uc.DB)
 	if err != nil {
 		uc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{
@@ -86,7 +155,7 @@ func (uc *UsersController) Create(ctx iris.Context) {
 func (uc *UsersController) Delete(ctx iris.Context) {
 	var userReq models.UserEntity
 	ctx.ReadJSON(&userReq)
-	_, err := users_service.DeleteUser(&userReq, uc.DB)
+	_, err := service.DeleteUser(&userReq, uc.DB)
 	if err != nil {
 		uc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{
@@ -106,7 +175,7 @@ func (uc *UsersController) Delete(ctx iris.Context) {
 func (uc *UsersController) Update(ctx iris.Context) {
 	var userReq models.UserEntity
 	ctx.ReadJSON(&userReq)
-	_, err := users_service.UpdateUser(&userReq, uc.DB)
+	_, err := service.UpdateUser(&userReq, uc.DB)
 	if err != nil {
 		uc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{
@@ -133,7 +202,7 @@ func (uc *UsersController) Search(ctx iris.Context) {
 		Index: int64(page_index),
 	}
 
-	result, err := users_service.SearchUsers(userName, uc.DB, pageinOption)
+	result, err := service.SearchUsers(userName, uc.DB, pageinOption)
 	if err != nil {
 		uc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{
@@ -157,3 +226,5 @@ func (uc *UsersController) Search(ctx iris.Context) {
 		}
 	}
 }
+
+
