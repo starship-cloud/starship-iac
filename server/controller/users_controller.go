@@ -80,10 +80,6 @@ func (uc *UsersController) Login(ctx iris.Context) {
 	}
 }
 
-func (uc *UsersController) Loginoff(ctx iris.Context) {
-  //TODO: session?
-}
-
 func (uc *UsersController) Get(ctx iris.Context) {
 	var userReq models.UserEntity
 	ctx.ReadJSON(&userReq)
