@@ -23,12 +23,6 @@ type UsersResp struct {
 	Data        []models.UserEntity
 }
 
-type AuthResp struct {
-	StatusCode  uint
-	Description string
-	Data        models.AuthEntity
-}
-
 ///////
 
 type UsersController struct {
