@@ -45,10 +45,6 @@ func (uc *UsersController) Login(ctx iris.Context) {
 		})
 	} else {
 		if user != nil {
-			//found
-			//compare hash by Hashed(password) == user.Password
-			// if not return AuthResp with 401
-			// else create auth token and return 200 with an AuthResp
 			err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userReq.Password))
 			if err != nil {
 				ctx.JSON( &AuthResp{
