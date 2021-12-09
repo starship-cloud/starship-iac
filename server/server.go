@@ -26,6 +26,7 @@ type Server struct {
 	StatusController     *controllers.StatusController
 	UsersController      *controllers.UsersController
 	AdminController      *controllers.AdminController
+	LoginController      *controllers.LoginController
 	PermissionController *controllers.PermissionController
 
 	SSLCertFile       string
@@ -141,6 +142,8 @@ func (s *Server) ControllersInitialize() {
 	s.App.Get(apiVer+"/users/search", s.UsersController.Search)
 
 	s.App.Get(apiVer+"/admin/users", s.AdminController.Users)
+	s.App.Post(apiVer+"/login", s.LoginController.Login)
+	s.App.Post(apiVer+"/logout", s.LoginController.Logout)
 }
 
 func (s *Server) Start() error {
