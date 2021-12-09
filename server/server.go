@@ -3,12 +3,16 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/casbin/casbin/v2"
+	mongodbadapter "github.com/casbin/mongodb-adapter/v3"
 	"github.com/kataras/iris/v12"
 	"github.com/starship-cloud/starship-iac/server/controller"
 	"github.com/starship-cloud/starship-iac/server/core/db"
 	"github.com/starship-cloud/starship-iac/server/events"
 	"github.com/starship-cloud/starship-iac/server/logging"
+	"github.com/starship-cloud/starship-iac/utils"
 	"github.com/urfave/cli"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,13 +20,13 @@ import (
 )
 
 type Server struct {
-	Port             int
-	Logger           logging.SimpleLogging
-	App              *iris.Application
-	StatusController *controllers.StatusController
-	UsersController  *controllers.UsersController
-	AdminController  *controllers.AdminController
-	LoginController  *controllers.LoginController
+	Port                 int
+	Logger               logging.SimpleLogging
+	App                  *iris.Application
+	StatusController     *controllers.StatusController
+	UsersController      *controllers.UsersController
+	AdminController      *controllers.AdminController
+	PermissionController *controllers.PermissionController
 
 	SSLCertFile       string
 	SSLKeyFile        string
@@ -71,17 +75,59 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		DB:      db,
 	}
 
+	permissionController, err := initPermissionSystem(logger, drainer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize permission system.")
+	}
+
 	app := iris.New()
 
 	return &Server{
-		Port:            userConfig.Port,
-		Logger:          logger,
-		SSLKeyFile:      userConfig.SSLKeyFile,
-		SSLCertFile:     userConfig.SSLCertFile,
-		SkipAuthToken:   userConfig.SkipAuthToken,
-		Drainer:         drainer,
-		UsersController: userController,
-		App:             app,
+		Port:                 userConfig.Port,
+		Logger:               logger,
+		SSLKeyFile:           userConfig.SSLKeyFile,
+		SSLCertFile:          userConfig.SSLCertFile,
+		SkipAuthToken:        userConfig.SkipAuthToken,
+		Drainer:              drainer,
+		UsersController:      userController,
+		PermissionController: permissionController,
+		App:                  app,
+	}, nil
+}
+
+func initPermissionSystem(logger logging.SimpleLogging, drainer *events.Drainer) (*controllers.PermissionController, error) {
+	dbConfig := db.DBConfig{
+		MongoDBConnectionUri: utils.MongoDBConnectionUri,
+		MongoDBName:          utils.MongoAuthDBName,
+		MongoDBUserName:      utils.MongoDBUserName,
+		MongoDBPassword:      utils.MongoDBPassword,
+		MaxConnection:        utils.MaxConnection,
+		RootCmdLogPath:       utils.RootCmdLogPath,
+		RootSecret:           utils.RootSecret,
+	}
+	clientOptions := options.Client().ApplyURI(dbConfig.MongoDBConnectionUri)
+	clientOptions.SetMaxPoolSize(uint64(dbConfig.MaxConnection))
+	credential := options.Credential{
+		Username: dbConfig.MongoDBUserName,
+		Password: dbConfig.MongoDBPassword,
+	}
+
+	clientOptions.SetAuth(credential)
+
+	adapter, err := mongodbadapter.NewAdapterWithClientOption(clientOptions, utils.MongoAuthDBName)
+	if err != nil {
+		return nil, err
+	}
+
+	enforcer, err := casbin.NewEnforcer("resources/rbac_model.conf", adapter)
+	if err != nil {
+		return nil, err
+	}
+	enforcer.EnableAutoSave(true)
+	return &controllers.PermissionController{
+		Logger:   logger,
+		Drainer:  drainer,
+		Enforcer: enforcer,
 	}, nil
 }
 
@@ -95,8 +141,6 @@ func (s *Server) ControllersInitialize() {
 	s.App.Get(apiVer+"/users/search", s.UsersController.Search)
 
 	s.App.Get(apiVer+"/admin/users", s.AdminController.Users)
-	s.App.Post(apiVer+"/login", s.LoginController.Login)
-	s.App.Post(apiVer+"/logout", s.LoginController.Logout)
 }
 
 func (s *Server) Start() error {
@@ -113,7 +157,7 @@ func (s *Server) Start() error {
 		var err error
 		if !s.SkipAuthToken {
 			s.App.UseGlobal(checkToken)
-		}else{
+		} else {
 			s.Logger.Warn("auth token was skipped *** dangious and only can be used in testing/developing phase")
 		}
 
