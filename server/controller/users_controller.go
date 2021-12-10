@@ -74,7 +74,7 @@ func (uc *UsersController) Get(ctx iris.Context) {
 	var userReq models.UserEntity
 	ctx.ReadJSON(&userReq)
 
-	userId := ctx.Params().Get("userid")
+	userId := ctx.Params().Get("user_id")
 
 	result, err := service.GetUserByUserId(userId, uc.DB)
 	if err != nil {
@@ -162,7 +162,7 @@ func (uc *UsersController) Update(ctx iris.Context) {
 }
 
 func (uc *UsersController) Search(ctx iris.Context) {
-	userName :=  ctx.URLParam("username")
+	userName :=  ctx.URLParam("user_name")
 	page_index, _ := strconv.Atoi(ctx.URLParam("page_index"))
 	page_limit, _ := strconv.Atoi(ctx.URLParam("page_limit"))
 
