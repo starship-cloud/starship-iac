@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/casbin/casbin/v2"
+	"github.com/casbin/casbin/v2/model"
 	mongodbadapter "github.com/casbin/mongodb-adapter/v3"
 	"github.com/kataras/iris/v12"
 	"github.com/starship-cloud/starship-iac/server/controller"
@@ -26,7 +27,7 @@ type Server struct {
 	StatusController     *controllers.StatusController
 	UsersController      *controllers.UsersController
 	AdminController      *controllers.AdminController
-	AuthController      *controllers.AuthController
+	AuthController       *controllers.AuthController
 	PermissionController *controllers.PermissionController
 
 	SSLCertFile       string
@@ -120,7 +121,13 @@ func initPermissionSystem(logger logging.SimpleLogging, drainer *events.Drainer)
 		return nil, err
 	}
 
-	enforcer, err := casbin.NewEnforcer("resources/rbac_model.conf", adapter)
+	rbacModel := model.NewModel()
+	rbacModel.AddDef("r", "r", "sub, obj, act")
+	rbacModel.AddDef("p", "p", "sub, obj, act")
+	rbacModel.AddDef("e", "e", "some(where (p.eft == allow))")
+	rbacModel.AddDef("m", "m", "m = g(r.sub, p.sub) && ( r.obj == p.obj || p.obj==\"*\" ) && ( r.act == p.act || p.act==\"*\" )")
+
+	enforcer, err := casbin.NewEnforcer(rbacModel, adapter)
 	if err != nil {
 		return nil, err
 	}
