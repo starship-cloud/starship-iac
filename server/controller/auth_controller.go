@@ -26,7 +26,7 @@ func (uc *AuthController) Login(ctx iris.Context) {
 	var userReq models.UserEntity
 	ctx.ReadJSON(&userReq)
 
-	user, err := service.GetUserByNmae(userReq.Username, uc.DB)
+	user, err := service.GetUserByNmae(userReq.UserName, uc.DB)
 	if err != nil {
 		uc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{
@@ -48,18 +48,18 @@ func (uc *AuthController) Login(ctx iris.Context) {
 				})
 			}
 
-			token, _ := service.CreateToken(user.Userid)
+			token, _ := service.CreateToken(user.UserId)
 
 			ctx.JSON(&AuthResp{
 				StatusCode:  iris.StatusOK,
 				Description: "found",
-				Data: models.AuthEntity{UserId: user.Userid, AuthToken: token},
+				Data: models.AuthEntity{UserId: user.UserId, AuthToken: token},
 			})
 		} else {
 			ctx.JSON(&UserResp{
 				StatusCode:  iris.StatusNotFound,
 				Description: "user not found",
-				Data:        models.UserEntity{Userid: userReq.Userid},
+				Data:        models.UserEntity{UserId: userReq.UserId},
 			})
 		}
 	}
