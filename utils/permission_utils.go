@@ -1,4 +1,4 @@
-package PermissionUtils
+package utils
 
 const (
 	Admin         = "*"              //role1 , * , *
