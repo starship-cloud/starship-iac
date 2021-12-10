@@ -21,7 +21,7 @@ func GetUserByNmae(userName string, db *db.MongoDB) (*models.UserEntity, error) 
 
 	if err != nil {
 		return nil, fmt.Errorf("get user %s failed due to DB operation", userName)
-	} else if userEntity.Userid != "" {
+	} else if userEntity.UserId != "" {
 		return userEntity, nil
 	} else {
 		//not found
@@ -39,7 +39,7 @@ func GetUserByUserId(userId string, db *db.MongoDB) (*models.UserEntity, error) 
 
 	if err != nil {
 		return nil, fmt.Errorf("get user with user id %s failed due to DB operation", userId)
-	} else if userEntity.Userid != "" {
+	} else if userEntity.UserId != "" {
 		return userEntity, nil
 	} else {
 		//not found
@@ -51,21 +51,21 @@ func CreateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, er
 	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
 	userEntity := &models.UserEntity{}
 
-	filter := bson.M{"username": user.Username}
+	filter := bson.M{"username": user.UserName}
 	db.GetOne(collection, filter, userEntity)
 
-	if userEntity.Userid != "" {
-		return nil, fmt.Errorf("the user %s with userId %s has been exist.", user.Username, userEntity.Userid)
+	if userEntity.UserId != "" {
+		return nil, fmt.Errorf("the user %s with userId %s has been exist.", user.UserName, userEntity.UserId)
 	} else {
 		userId := utils.GenUserId()
 		t := time.Now().Unix()
 
 		if hash, err := bcrypt.GenerateFromPassword([]byte(userEntity.Password), bcrypt.DefaultCost); err != nil {
-			return nil, fmt.Errorf("create user %s failed due to hash computing", user.Username)
+			return nil, fmt.Errorf("create user %s failed due to hash computing", user.UserName)
 		} else {
 			newUser := &models.UserEntity{
-				Userid:    userId,
-				Username:  user.Username,
+				UserId:    userId,
+				UserName:  user.UserName,
 				Email:     user.Email,
 				Password:  string(hash),
 				UserLocal: true,
@@ -75,7 +75,7 @@ func CreateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, er
 
 			_, err := db.Insert(collection, newUser)
 			if err != nil {
-				return nil, fmt.Errorf("save user %s failed due to DB operation", user.Username)
+				return nil, fmt.Errorf("save user %s failed due to DB operation", user.UserName)
 			} else {
 				return newUser, nil
 			}
@@ -84,23 +84,23 @@ func CreateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, er
 }
 
 func UpdateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, error) {
-	if len(strings.TrimSpace(user.Userid)) == 0 ||
-		len(strings.TrimSpace(user.Username)) == 0 ||
+	if len(strings.TrimSpace(user.UserId)) == 0 ||
+		len(strings.TrimSpace(user.UserName)) == 0 ||
 		len(strings.TrimSpace(user.Email)) == 0 {
 		return nil, errors.New("userid/username/email are required.")
 	}
 
 	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
 	userEntity := &models.UserEntity{}
-	filter := bson.M{"userid": user.Userid}
+	filter := bson.M{"userid": user.UserId}
 
 	db.GetOne(collection, filter, &userEntity)
 
-	if userEntity.Userid != "" {
+	if userEntity.UserId != "" {
 		//found
 		newUser := &models.UserEntity{
-			Userid:   userEntity.Userid,
-			Username: user.Username,
+			UserId:   userEntity.UserId,
+			UserName: user.UserName,
 			Email:    user.Email,
 			Password: userEntity.Password, //can't be updated
 			CreateAt: time.Now().Unix(),
@@ -108,34 +108,34 @@ func UpdateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, er
 
 		_, err := db.UpdateOrSave(collection, newUser, bson.M{})
 		if err != nil {
-			return nil, fmt.Errorf("update user %s failed due to DB operation", user.Username)
+			return nil, fmt.Errorf("update user %s failed due to DB operation", user.UserName)
 		} else {
 			return newUser, nil
 		}
 	} else {
-		return nil, fmt.Errorf("the user %s with user id %s not exist.", userEntity.Username, user.Userid)
+		return nil, fmt.Errorf("the user %s with user id %s not exist.", userEntity.UserName, user.UserId)
 	}
 }
 
 func DeleteUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, error) {
-	if len(strings.TrimSpace(user.Userid)) == 0 {
+	if len(strings.TrimSpace(user.UserId)) == 0 {
 		return nil, errors.New("userid is required.")
 	}
 
 	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
 
 	userEntity := &models.UserEntity{}
-	filter := bson.M{"userid": user.Userid}
+	filter := bson.M{"userid": user.UserId}
 	err := db.GetOne(collection, filter, userEntity)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "delete failed")
-	} else if userEntity.Userid != "" {
+	} else if userEntity.UserId != "" {
 		//found, delete
 		_, err := db.Delete(collection, filter)
 		return nil, err
 	} else {
-		return nil, fmt.Errorf("the user with user id: %s has been deleted.", user.Userid)
+		return nil, fmt.Errorf("the user with user id: %s has been deleted.", user.UserId)
 	}
 
 }

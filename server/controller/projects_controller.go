@@ -7,20 +7,19 @@ import (
 	"github.com/starship-cloud/starship-iac/server/events/models"
 	"github.com/starship-cloud/starship-iac/server/logging"
 	"github.com/starship-cloud/starship-iac/server/services"
-	"golang.org/x/crypto/bcrypt"
 	"strconv"
 )
 
 type ProjectResp struct {
 	StatusCode  uint
 	Description string
-	Data        models.UserEntity
+	Data        models.ProjectEntity
 }
 
 type ProjectsResp struct {
 	StatusCode  uint
 	Description string
-	Data        []models.UserEntity
+	Data        []models.ProjectEntity
 }
 
 ///////
@@ -31,54 +30,15 @@ type ProjectsController struct {
 	DB      *db.MongoDB
 }
 
-func (uc *ProjectsController) Login(ctx iris.Context) {
-	var userReq models.UserEntity
-	ctx.ReadJSON(&userReq)
+func (pc *ProjectsController) Get(ctx iris.Context) {
+	var prjReq models.ProjectEntity
+	ctx.ReadJSON(&prjReq)
 
-	user, err := service.GetUserByNmae(userReq.UserName, uc.DB)
+	userId := ctx.Params().Get("projectid")
+
+	result, err := service.GetUserByUserId(userId, pc.DB)
 	if err != nil {
-		uc.Logger.Err(err.Error())
-		ctx.JSON(&UserResp{
-			StatusCode:  iris.StatusInternalServerError,
-			Description: err.Error(),
-			Data:        models.UserEntity{},
-		})
-	} else {
-		if user != nil {
-			err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userReq.Password))
-			if err != nil {
-				ctx.JSON( &AuthResp{
-					StatusCode: iris.StatusUnauthorized,
-					Description: "password is not correct",
-				})
-			}
-
-			token, _ := service.CreateToken(user.UserId)
-
-			ctx.JSON(&AuthResp{
-				StatusCode:  iris.StatusOK,
-				Description: "found",
-				Data: models.AuthEntity{UserId: user.UserId, AuthToken: token},
-			})
-		} else {
-			ctx.JSON(&UserResp{
-				StatusCode:  iris.StatusNotFound,
-				Description: "user not found",
-				Data:        models.UserEntity{UserId: userReq.UserId},
-			})
-		}
-	}
-}
-
-func (uc *ProjectsController) Get(ctx iris.Context) {
-	var userReq models.UserEntity
-	ctx.ReadJSON(&userReq)
-
-	userId := ctx.Params().Get("userid")
-
-	result, err := service.GetUserByUserId(userId, uc.DB)
-	if err != nil {
-		uc.Logger.Err(err.Error())
+		pc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
@@ -95,18 +55,18 @@ func (uc *ProjectsController) Get(ctx iris.Context) {
 			ctx.JSON(&UserResp{
 				StatusCode:  iris.StatusNotFound,
 				Description: "Not found",
-				Data:        models.UserEntity{UserId: userReq.UserId},
+				Data:        models.UserEntity{UserId: prjReq.ProjectId},
 			})
 		}
 	}
 }
 
-func (uc *ProjectsController) Create(ctx iris.Context) {
+func (pc *ProjectsController) Create(ctx iris.Context) {
 	var userReq models.UserEntity
 	ctx.ReadJSON(&userReq)
-	result, err := service.CreateUser(&userReq, uc.DB)
+	result, err := service.CreateUser(&userReq, pc.DB)
 	if err != nil {
-		uc.Logger.Err(err.Error())
+		pc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
@@ -121,12 +81,12 @@ func (uc *ProjectsController) Create(ctx iris.Context) {
 	}
 }
 
-func (uc *ProjectsController) Delete(ctx iris.Context) {
+func (pc *ProjectsController) Delete(ctx iris.Context) {
 	var userReq models.UserEntity
 	ctx.ReadJSON(&userReq)
-	_, err := service.DeleteUser(&userReq, uc.DB)
+	_, err := service.DeleteUser(&userReq, pc.DB)
 	if err != nil {
-		uc.Logger.Err(err.Error())
+		pc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
@@ -141,12 +101,12 @@ func (uc *ProjectsController) Delete(ctx iris.Context) {
 	}
 }
 
-func (uc *ProjectsController) Update(ctx iris.Context) {
+func (pc *ProjectsController) Update(ctx iris.Context) {
 	var userReq models.UserEntity
 	ctx.ReadJSON(&userReq)
-	_, err := service.UpdateUser(&userReq, uc.DB)
+	_, err := service.UpdateUser(&userReq, pc.DB)
 	if err != nil {
-		uc.Logger.Err(err.Error())
+		pc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
@@ -161,7 +121,7 @@ func (uc *ProjectsController) Update(ctx iris.Context) {
 	}
 }
 
-func (uc *ProjectsController) Search(ctx iris.Context) {
+func (pc *ProjectsController) Search(ctx iris.Context) {
 	userName :=  ctx.URLParam("projectname")
 	page_index, _ := strconv.Atoi(ctx.URLParam("page_index"))
 	page_limit, _ := strconv.Atoi(ctx.URLParam("page_limit"))
@@ -171,9 +131,9 @@ func (uc *ProjectsController) Search(ctx iris.Context) {
 		Index: int64(page_index),
 	}
 
-	result, err := service.SearchUsers(userName, uc.DB, pageinOption)
+	result, err := service.SearchUsers(userName, pc.DB, pageinOption)
 	if err != nil {
-		uc.Logger.Err(err.Error())
+		pc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
@@ -184,7 +144,7 @@ func (uc *ProjectsController) Search(ctx iris.Context) {
 			ctx.JSON(&ProjectsResp{
 				StatusCode:  iris.StatusOK,
 				Description: "found",
-				Data:        result,
+				Data:        nil /*result*/,
 			})
 		} else {
 			ctx.JSON(&UserResp{
@@ -195,5 +155,3 @@ func (uc *ProjectsController) Search(ctx iris.Context) {
 		}
 	}
 }
-
-
