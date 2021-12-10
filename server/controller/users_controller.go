@@ -35,7 +35,7 @@ func (uc *UsersController) Login(ctx iris.Context) {
 	var userReq models.UserEntity
 	ctx.ReadJSON(&userReq)
 
-	user, err := service.GetUserByNmae(userReq.Username, uc.DB)
+	user, err := service.GetUserByNmae(userReq.UserName, uc.DB)
 	if err != nil {
 		uc.Logger.Err(err.Error())
 		ctx.JSON(&UserResp{
@@ -53,18 +53,18 @@ func (uc *UsersController) Login(ctx iris.Context) {
 				})
 			}
 
-			token, _ := service.CreateToken(user.Userid)
+			token, _ := service.CreateToken(user.UserId)
 
 			ctx.JSON(&AuthResp{
 				StatusCode:  iris.StatusOK,
 				Description: "found",
-				Data: models.AuthEntity{Userid: user.Userid, AuthToken: token},
+				Data: models.AuthEntity{UserId: user.UserId, AuthToken: token},
 			})
 		} else {
 			ctx.JSON(&UserResp{
 				StatusCode:  iris.StatusNotFound,
 				Description: "user not found",
-				Data:        models.UserEntity{Userid: userReq.Userid},
+				Data:        models.UserEntity{UserId: userReq.UserId},
 			})
 		}
 	}
@@ -95,7 +95,7 @@ func (uc *UsersController) Get(ctx iris.Context) {
 			ctx.JSON(&UserResp{
 				StatusCode:  iris.StatusNotFound,
 				Description: "Not found",
-				Data:        models.UserEntity{Userid: userReq.Userid},
+				Data:        models.UserEntity{UserId: userReq.UserId},
 			})
 		}
 	}
@@ -110,7 +110,7 @@ func (uc *UsersController) Create(ctx iris.Context) {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			Data:        models.UserEntity{Username: userReq.Username},
+			Data:        models.UserEntity{UserName: userReq.UserName},
 		})
 	} else {
 		ctx.JSON(&UserResp{
@@ -130,13 +130,13 @@ func (uc *UsersController) Delete(ctx iris.Context) {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			Data:        models.UserEntity{Userid: userReq.Userid},
+			Data:        models.UserEntity{UserId: userReq.UserId},
 		})
 	} else {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusOK,
 			Description: "deleted",
-			Data:        models.UserEntity{Userid: userReq.Userid},
+			Data:        models.UserEntity{UserId: userReq.UserId},
 		})
 	}
 }
@@ -150,13 +150,13 @@ func (uc *UsersController) Update(ctx iris.Context) {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			Data:        models.UserEntity{Userid: userReq.Userid},
+			Data:        models.UserEntity{UserId: userReq.UserId},
 		})
 	} else {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusOK,
 			Description: "updated",
-			Data:        models.UserEntity{Userid: userReq.Userid},
+			Data:        models.UserEntity{UserId: userReq.UserId},
 		})
 	}
 }
@@ -177,7 +177,7 @@ func (uc *UsersController) Search(ctx iris.Context) {
 		ctx.JSON(&UserResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			Data:        models.UserEntity{Username: userName},
+			Data:        models.UserEntity{UserName: userName},
 		})
 	} else {
 		if result != nil {
@@ -190,7 +190,7 @@ func (uc *UsersController) Search(ctx iris.Context) {
 			ctx.JSON(&UserResp{
 				StatusCode:  iris.StatusNotFound,
 				Description: "Not found",
-				Data:        models.UserEntity{Username: userName},
+				Data:        models.UserEntity{UserName: userName},
 			})
 		}
 	}
