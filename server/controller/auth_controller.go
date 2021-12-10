@@ -3,11 +3,11 @@ package controllers
 import (
 	"github.com/kataras/iris/v12"
 	"github.com/starship-cloud/starship-iac/server/core/db"
+	"github.com/starship-cloud/starship-iac/server/events"
 	"github.com/starship-cloud/starship-iac/server/events/models"
+	"github.com/starship-cloud/starship-iac/server/logging"
 	service "github.com/starship-cloud/starship-iac/server/services"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/starship-cloud/starship-iac/server/logging"
-	"github.com/starship-cloud/starship-iac/server/events"
 )
 
 type AuthResp struct {
@@ -53,7 +53,7 @@ func (uc *AuthController) Login(ctx iris.Context) {
 			ctx.JSON(&AuthResp{
 				StatusCode:  iris.StatusOK,
 				Description: "found",
-				Data: models.AuthEntity{Userid: user.Userid, AuthToken: token},
+				Data: models.AuthEntity{UserId: user.Userid, AuthToken: token},
 			})
 		} else {
 			ctx.JSON(&UserResp{
