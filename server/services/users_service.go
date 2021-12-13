@@ -15,7 +15,7 @@ import (
 func GetUserByNmae(userName string, db *db.MongoDB) (*models.UserEntity, error) {
 	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
 
-	filter := bson.M{"username": userName}
+	filter := bson.M{"user_name": userName}
 	userEntity := &models.UserEntity{}
 	err := db.GetOne(collection, filter, &userEntity)
 
@@ -32,7 +32,7 @@ func GetUserByNmae(userName string, db *db.MongoDB) (*models.UserEntity, error) 
 func GetUserByUserId(userId string, db *db.MongoDB) (*models.UserEntity, error) {
 	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
 
-	filter := bson.M{"userid": userId}
+	filter := bson.M{"user_id": userId}
 
 	userEntity := &models.UserEntity{}
 	err := db.GetOne(collection, filter, &userEntity)
@@ -92,7 +92,7 @@ func UpdateUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, er
 
 	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
 	userEntity := &models.UserEntity{}
-	filter := bson.M{"userid": user.UserId}
+	filter := bson.M{"user_id": user.UserId}
 
 	db.GetOne(collection, filter, &userEntity)
 
@@ -125,7 +125,7 @@ func DeleteUser(user *models.UserEntity, db *db.MongoDB) (*models.UserEntity, er
 	collection := db.DBClient.Database(models.DB_NAME).Collection(models.DB_COLLECTION_USERS)
 
 	userEntity := &models.UserEntity{}
-	filter := bson.M{"userid": user.UserId}
+	filter := bson.M{"user_id": user.UserId}
 	err := db.GetOne(collection, filter, userEntity)
 
 	if err != nil {

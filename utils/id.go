@@ -11,3 +11,11 @@ func GenUserId() string{
 	}
 	return "user-" + id
 }
+
+func GenProjectId() string{
+	id, err := gonanoid.Generate("abcdefgefghijklmnopqrstuvwxyz", 8)
+	if err != nil {
+		panic(err)
+	}
+	return "project-" + id
+}

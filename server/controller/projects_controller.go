@@ -34,28 +34,28 @@ func (pc *ProjectsController) Get(ctx iris.Context) {
 	var prjReq models.ProjectEntity
 	ctx.ReadJSON(&prjReq)
 
-	userId := ctx.Params().Get("projectid")
+	projectId := ctx.Params().Get("project_id")
 
-	result, err := service.GetUserByUserId(userId, pc.DB)
+	result, err := service.GetProjectByProjectId(projectId, pc.DB)
 	if err != nil {
 		pc.Logger.Err(err.Error())
-		ctx.JSON(&UserResp{
+		ctx.JSON(&ProjectResp{
 			StatusCode:  iris.StatusInternalServerError,
 			Description: err.Error(),
-			Data:        models.UserEntity{},
+			Data:        models.ProjectEntity{},
 		})
 	} else {
 		if result != nil {
-			ctx.JSON(&UserResp{
+			ctx.JSON(&ProjectResp{
 				StatusCode:  iris.StatusOK,
 				Description: "found",
 				Data:        *result,
 			})
 		} else {
-			ctx.JSON(&UserResp{
+			ctx.JSON(&ProjectResp{
 				StatusCode:  iris.StatusNotFound,
 				Description: "Not found",
-				Data:        models.UserEntity{UserId: prjReq.ProjectId},
+				Data:        models.ProjectEntity{ProjectId: prjReq.ProjectId},
 			})
 		}
 	}
