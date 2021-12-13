@@ -36,3 +36,15 @@ func GetAllProjectPermissionsForUser(userId string, enforcer *casbin.Enforcer) [
 func GetUsersByProjectId(projectId string, enforcer *casbin.Enforcer) [][]string {
 	return enforcer.GetFilteredPolicy(1, projectId)
 }
+
+func AddProjectPermissionForGroup(permission *models.ProjectPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.AddGroupingPolicy(permission.GroupId, permission.ProjectId, permission.Permission)
+}
+
+func DeleteProjectPermissionForGroup(permission *models.ProjectPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.RemoveGroupingPolicy(permission.GroupId, permission.ProjectId, permission.Permission)
+}
+
+func GetAllProjectPermissionsForGroup(groupId string, enforcer *casbin.Enforcer) [][]string {
+	return enforcer.GetFilteredGroupingPolicy(0, groupId)
+}

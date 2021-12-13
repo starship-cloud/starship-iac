@@ -2,6 +2,7 @@ package models
 
 type ProjectPermission struct {
 	UserId     string
+	GroupId    string
 	ProjectId  string
 	Permission string
 }

@@ -13,6 +13,19 @@ import (
 	"testing"
 )
 
+func errLog(tb testing.TB, fmt string, args ...interface{}) {
+	tb.Helper()
+	tb.Logf("\033[31m"+fmt+"\033[39m", args...)
+}
+
+func Assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
+	tb.Helper()
+	if !condition {
+		errLog(tb, msg, v...)
+		tb.FailNow()
+	}
+}
+
 func NewEnforcer() *casbin.Enforcer {
 	uri := utils.MongoDBConnectionUri
 	if !strings.HasPrefix(uri, "mongodb+srv://") && !strings.HasPrefix(uri, "mongodb://") {
@@ -43,22 +56,11 @@ func NewEnforcer() *casbin.Enforcer {
 	}
 
 	m := model.NewModel()
-	m.LoadModelFromText(`
-			[request_definition]
-			r = sub, obj, act
-			
-			[policy_definition]
-			p = sub, obj, act
-			
-			[role_definition]
-			g = _, _
-			
-			[policy_effect]
-			e = some(where (p.eft == allow))
-			
-			[matchers]
-			m = g(r.sub, p.sub) && ( r.obj == p.obj || p.obj=="*" ) && ( r.act == p.act || p.act=="*" )
-			`)
+	m.AddDef("r", "r", "sub, obj, act")
+	m.AddDef("p", "p", "sub, obj, act")
+	m.AddDef("g", "g", "_, _")
+	m.AddDef("e", "e", "some(where (p.eft == allow))")
+	m.AddDef("m", "m", "g(r.sub, p.sub) && ( r.obj == p.obj || p.obj==\"*\" ) && ( r.act == p.act || p.act==\"*\" )")
 
 	e, err := casbin.NewEnforcer(m, a)
 	e.EnableAutoSave(true)
@@ -153,7 +155,6 @@ func Test_ProjectPermissionsForUser(t *testing.T) {
 
 	res, _ = DeleteProjectPermissionForUser(permission2, e)
 	fmt.Println(res)
-
 }
 
 func Test_GetAllProjectPermissionsForUser(t *testing.T) {
@@ -162,7 +163,6 @@ func Test_GetAllProjectPermissionsForUser(t *testing.T) {
 	userId := "zs"
 	res := GetAllProjectPermissionsForUser(userId, e)
 	fmt.Println(res)
-
 }
 
 func Test_GetUsersByProjectId(t *testing.T) {
@@ -171,5 +171,39 @@ func Test_GetUsersByProjectId(t *testing.T) {
 	projectId := "proj1"
 	res := GetUsersByProjectId(projectId, e)
 	fmt.Println(res)
+}
 
+func Test_ProjectPermissionsForGroup(t *testing.T) {
+	e := NewEnforcer()
+	userId := "ls"
+	groupId := "g1"
+	projectId := "proj2"
+	permission1 := &models.ProjectPermission{
+		UserId:     userId,
+		GroupId:    groupId,
+		ProjectId:  projectId,
+		Permission: utils.ReadOnly,
+	}
+	res, _ := AddProjectPermissionForGroup(permission1, e)
+	fmt.Println(res)
+
+	permission2 := &models.ProjectPermission{
+		UserId:     userId,
+		GroupId:    groupId,
+		ProjectId:  projectId,
+		Permission: utils.Config,
+	}
+	res, _ = AddProjectPermissionForGroup(permission2, e)
+	fmt.Println(res)
+
+	res, _ = DeleteProjectPermissionForGroup(permission2, e)
+	fmt.Println(res)
+}
+
+func Test_GetAllProjectPermissionsForGroup(t *testing.T) {
+	e := NewEnforcer()
+
+	groupId := "g1"
+	res := GetAllProjectPermissionsForGroup(groupId, e)
+	fmt.Println(res)
 }
