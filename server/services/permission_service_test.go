@@ -207,3 +207,69 @@ func Test_GetAllProjectPermissionsForGroup(t *testing.T) {
 	res := GetAllProjectPermissionsForGroup(groupId, e)
 	fmt.Println(res)
 }
+
+func Test_EnvironmentPermissionsForUser(t *testing.T) {
+	e := NewEnforcer()
+	userId := "zs"
+	environmentId1 := "sit"
+	permission1 := &models.EnvironmentPermission{
+		UserId:        userId,
+		EnvironmentId: environmentId1,
+		Permission:    utils.Execute,
+	}
+	res, _ := AddEnvironmentPermissionForUser(permission1, e)
+	fmt.Println(res)
+
+	environmentId2 := "uat"
+	permission2 := &models.EnvironmentPermission{
+		UserId:        userId,
+		EnvironmentId: environmentId2,
+		Permission:    utils.Execute,
+	}
+	res, _ = AddEnvironmentPermissionForUser(permission2, e)
+	fmt.Println(res)
+
+	res, _ = DeleteEnvironmentPermissionForUser(permission2, e)
+	fmt.Println(res)
+}
+
+func Test_GetAllEnvironmentPermissionsForUser(t *testing.T) {
+	e := NewEnforcer()
+
+	userId := "zs"
+	res := GetAllEnvironmentPermissionsForUser(userId, e)
+	fmt.Println(res)
+}
+
+func Test_EnvironmentPermissionsForGroup(t *testing.T) {
+	e := NewEnforcer()
+	groupId := "g2"
+	environmentId1 := "sit"
+	permission1 := &models.EnvironmentPermission{
+		GroupId:       groupId,
+		EnvironmentId: environmentId1,
+		Permission:    utils.Execute,
+	}
+	res, _ := AddEnvironmentPermissionForGroup(permission1, e)
+	fmt.Println(res)
+
+	environmentId2 := "uat"
+	permission2 := &models.EnvironmentPermission{
+		GroupId:       groupId,
+		EnvironmentId: environmentId2,
+		Permission:    utils.Execute,
+	}
+	res, _ = AddEnvironmentPermissionForGroup(permission2, e)
+	fmt.Println(res)
+
+	res, _ = DeleteEnvironmentPermissionForGroup(permission2, e)
+	fmt.Println(res)
+}
+
+func Test_GetAllEnvironmentPermissionsForGroup(t *testing.T) {
+	e := NewEnforcer()
+
+	groupId := "g2"
+	res := GetAllEnvironmentPermissionsForGroup(groupId, e)
+	fmt.Println(res)
+}

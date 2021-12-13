@@ -48,3 +48,27 @@ func DeleteProjectPermissionForGroup(permission *models.ProjectPermission, enfor
 func GetAllProjectPermissionsForGroup(groupId string, enforcer *casbin.Enforcer) [][]string {
 	return enforcer.GetFilteredGroupingPolicy(0, groupId)
 }
+
+func AddEnvironmentPermissionForUser(permission *models.EnvironmentPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.AddPolicy(permission.UserId, permission.EnvironmentId, permission.Permission)
+}
+
+func DeleteEnvironmentPermissionForUser(permission *models.EnvironmentPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.RemovePolicy(permission.UserId, permission.EnvironmentId, permission.Permission)
+}
+
+func GetAllEnvironmentPermissionsForUser(userId string, enforcer *casbin.Enforcer) [][]string {
+	return enforcer.GetFilteredPolicy(0, userId)
+}
+
+func AddEnvironmentPermissionForGroup(permission *models.EnvironmentPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.AddPolicy(permission.GroupId, permission.EnvironmentId, permission.Permission)
+}
+
+func DeleteEnvironmentPermissionForGroup(permission *models.EnvironmentPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.RemovePolicy(permission.GroupId, permission.EnvironmentId, permission.Permission)
+}
+
+func GetAllEnvironmentPermissionsForGroup(groupId string, enforcer *casbin.Enforcer) [][]string {
+	return enforcer.GetFilteredPolicy(0, groupId)
+}

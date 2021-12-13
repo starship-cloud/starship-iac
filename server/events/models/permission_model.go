@@ -17,3 +17,10 @@ type RoleForUser struct {
 	RoleName string
 	UserId   string
 }
+
+type EnvironmentPermission struct {
+	UserId        string
+	GroupId       string
+	EnvironmentId string
+	Permission    string
+}
