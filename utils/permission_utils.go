@@ -1,9 +1,9 @@
 package utils
 
 const (
-	Admin         = "*"              //role1 , * , *
-	ProjectCreate = "project_create" //role2 , * , project_create
-	Secret        = "secret"         //role3 , * , secret
+	Admin          = "admin"          //admin , * , *
+	ProjectCreater = "projectCreater" //projectCreater , * , project_create
+	secretManager  = "secretManager"  //secretManager , * , secret_manage
 
 	Config   = "config"    //tom , project1 , config
 	ReadOnly = "read_only" //tom , project1 , read_only

@@ -1,8 +1,8 @@
 package models
 
-type Permission struct {
+type ProjectPermission struct {
 	UserId     string
-	Id         string
+	ProjectId  string
 	Permission string
 }
 
