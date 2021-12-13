@@ -124,8 +124,9 @@ func initPermissionSystem(logger logging.SimpleLogging, drainer *events.Drainer)
 	rbacModel := model.NewModel()
 	rbacModel.AddDef("r", "r", "sub, obj, act")
 	rbacModel.AddDef("p", "p", "sub, obj, act")
+	rbacModel.AddDef("g", "g", "_, _")
 	rbacModel.AddDef("e", "e", "some(where (p.eft == allow))")
-	rbacModel.AddDef("m", "m", "m = g(r.sub, p.sub) && ( r.obj == p.obj || p.obj==\"*\" ) && ( r.act == p.act || p.act==\"*\" )")
+	rbacModel.AddDef("m", "m", "g(r.sub, p.sub) && ( r.obj == p.obj || p.obj==\"*\" ) && ( r.act == p.act || p.act==\"*\" )")
 
 	enforcer, err := casbin.NewEnforcer(rbacModel, adapter)
 	if err != nil {

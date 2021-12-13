@@ -20,10 +20,10 @@ type PermissionResp struct {
 	Description string
 }
 
-func (pc *PermissionController) AddPermission(ctx iris.Context) {
-	var permission models.Permission
+func (pc *PermissionController) AddProjectPermissionForUser(ctx iris.Context) {
+	var permission models.ProjectPermission
 	ctx.ReadJSON(&permission)
-	_, err := service.AddPermission(permission, pc.Enforcer)
+	_, err := service.AddProjectPermissionForUser(&permission, pc.Enforcer)
 	if err != nil {
 		ctx.JSON(&PermissionResp{
 			StatusCode:  iris.StatusOK,

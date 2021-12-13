@@ -1,8 +1,9 @@
 package models
 
-type Permission struct {
+type ProjectPermission struct {
 	UserId     string
-	Id         string
+	GroupId    string
+	ProjectId  string
 	Permission string
 }
 
@@ -15,4 +16,11 @@ type Role struct {
 type RoleForUser struct {
 	RoleName string
 	UserId   string
+}
+
+type EnvironmentPermission struct {
+	UserId        string
+	GroupId       string
+	EnvironmentId string
+	Permission    string
 }
