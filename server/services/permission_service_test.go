@@ -85,12 +85,12 @@ func Test_CreateRole(t *testing.T) {
 		fmt.Println(res)
 	}
 
-	projectCreater := &models.Role{
-		RoleName:   "projectCreater",
+	projectCreator := &models.Role{
+		RoleName:   "projectCreator",
 		Id:         "*",
 		Permission: "project_create",
 	}
-	res, err = CreateRole(projectCreater, e)
+	res, err = CreateRole(projectCreator, e)
 	if err != nil {
 		panic(err)
 	} else {
@@ -121,7 +121,7 @@ func Test_RoleForUser(t *testing.T) {
 	res, _ = DeleteRoleForUser(adminRole, e)
 	fmt.Println(res)
 
-	projCreateRole := &models.RoleForUser{UserId: userId, RoleName: utils.ProjectCreater}
+	projCreateRole := &models.RoleForUser{UserId: userId, RoleName: utils.ProjectCreator}
 	res, _ = AddRoleForUser(projCreateRole, e)
 	fmt.Println(res)
 

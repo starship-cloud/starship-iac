@@ -20,14 +20,19 @@ type PermissionResp struct {
 	Description string
 }
 
-func (pc *PermissionController) AddProjectPermissionForUser(ctx iris.Context) {
-	var permission models.ProjectPermission
-	ctx.ReadJSON(&permission)
-	_, err := service.AddProjectPermissionForUser(&permission, pc.Enforcer)
+func (pc *PermissionController) AddUserToRole(ctx iris.Context) {
+	var role models.RoleForUser
+	ctx.ReadJSON(&role)
+	_, err := service.AddRoleForUser(&role, pc.Enforcer)
 	if err != nil {
 		ctx.JSON(&PermissionResp{
+			StatusCode:  iris.StatusInternalServerError,
+			Description: "add role failed.",
+		})
+	} else {
+		ctx.JSON(&PermissionResp{
 			StatusCode:  iris.StatusOK,
-			Description: "authorize failed.",
+			Description: "add role success.",
 		})
 	}
 }

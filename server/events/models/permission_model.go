@@ -1,5 +1,12 @@
 package models
 
+type ProjectPermissionRequestBody struct {
+	Id          string
+	IsGroup     bool
+	ProjectId   string
+	IsAddAction bool
+}
+
 type ProjectPermission struct {
 	UserId     string
 	GroupId    string

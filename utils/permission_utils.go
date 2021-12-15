@@ -2,7 +2,7 @@ package utils
 
 const (
 	Admin          = "admin"          //admin , * , *
-	ProjectCreater = "projectCreater" //projectCreater , * , project_create
+	ProjectCreator = "projectCreator" //projectCreator , * , project_create
 	secretManager  = "secretManager"  //secretManager , * , secret_manage
 
 	Config   = "config"    //tom , project1 , config
