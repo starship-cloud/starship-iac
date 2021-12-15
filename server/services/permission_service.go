@@ -2,7 +2,10 @@ package service
 
 import (
 	"github.com/casbin/casbin/v2"
+	"github.com/deckarep/golang-set"
 	"github.com/starship-cloud/starship-iac/server/events/models"
+	"github.com/starship-cloud/starship-iac/utils"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func CreateRole(role *models.Role, enforcer *casbin.Enforcer) (bool, error) {
@@ -29,12 +32,26 @@ func DeleteProjectPermissionForUser(permission *models.ProjectPermission, enforc
 	return enforcer.RemovePolicy(permission.UserId, permission.ProjectId, permission.Permission)
 }
 
-func GetAllProjectPermissionsForUser(userId string, enforcer *casbin.Enforcer) [][]string {
-	return enforcer.GetFilteredPolicy(0, userId)
+func GetProjectIdsForUser(userId string, enforcer *casbin.Enforcer) mapset.Set {
+	filter := &bson.M{"v2": bson.M{"$in": []string{utils.ReadOnly, utils.Config}}}
+	enforcer.LoadFilteredPolicy(filter)
+	projectPermissions := enforcer.GetFilteredPolicy(0, userId)
+	enforcer.LoadPolicy()
+	projectIds := mapset.NewSet()
+	for _, projectPermission := range projectPermissions {
+		projectIds.Add(projectPermission[1])
+	}
+	return projectIds
 }
 
-func GetUsersByProjectId(projectId string, enforcer *casbin.Enforcer) [][]string {
-	return enforcer.GetFilteredPolicy(1, projectId)
+//user id and group id
+func GetUserIdsForProject(projectId string, enforcer *casbin.Enforcer) mapset.Set {
+	projectPermissions := enforcer.GetFilteredPolicy(1, projectId)
+	userIds := mapset.NewSet()
+	for _, projectPermission := range projectPermissions {
+		userIds.Add(projectPermission[0])
+	}
+	return userIds
 }
 
 func AddProjectPermissionForGroup(permission *models.ProjectPermission, enforcer *casbin.Enforcer) (bool, error) {

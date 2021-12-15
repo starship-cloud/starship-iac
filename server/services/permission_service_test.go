@@ -157,11 +157,11 @@ func Test_ProjectPermissionsForUser(t *testing.T) {
 	fmt.Println(res)
 }
 
-func Test_GetAllProjectPermissionsForUser(t *testing.T) {
+func Test_GetProjectIdsForUser(t *testing.T) {
 	e := NewEnforcer()
 
 	userId := "zs"
-	res := GetAllProjectPermissionsForUser(userId, e)
+	res := GetProjectIdsForUser(userId, e)
 	fmt.Println(res)
 }
 
@@ -169,7 +169,7 @@ func Test_GetUsersByProjectId(t *testing.T) {
 	e := NewEnforcer()
 
 	projectId := "proj1"
-	res := GetUsersByProjectId(projectId, e)
+	res := GetUserIdsForProject(projectId, e)
 	fmt.Println(res)
 }
 
