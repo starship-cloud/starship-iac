@@ -1,15 +1,7 @@
 package models
 
-type ProjectPermissionRequestBody struct {
-	Id          string
-	IsGroup     bool
-	ProjectId   string
-	IsAddAction bool
-}
-
 type ProjectPermission struct {
-	UserId     string
-	GroupId    string
+	Id         string
 	ProjectId  string
 	Permission string
 }
@@ -26,8 +18,19 @@ type RoleForUser struct {
 }
 
 type EnvironmentPermission struct {
-	UserId        string
-	GroupId       string
+	Id            string
 	EnvironmentId string
 	Permission    string
+}
+
+type ConfigurationPermission struct {
+	Id              string
+	ConfigurationId string
+	Permission      string
+}
+
+type SecretPermission struct {
+	Id         string
+	SecretId   string
+	Permission string
 }

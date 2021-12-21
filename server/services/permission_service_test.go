@@ -138,7 +138,7 @@ func Test_ProjectPermissionsForUser(t *testing.T) {
 	userId := "zs"
 	projectId := "proj1"
 	permission1 := &models.ProjectPermission{
-		UserId:     userId,
+		Id:         userId,
 		ProjectId:  projectId,
 		Permission: utils.ReadOnly,
 	}
@@ -146,7 +146,7 @@ func Test_ProjectPermissionsForUser(t *testing.T) {
 	fmt.Println(res)
 
 	permission2 := &models.ProjectPermission{
-		UserId:     userId,
+		Id:         userId,
 		ProjectId:  projectId,
 		Permission: utils.Config,
 	}
@@ -175,12 +175,10 @@ func Test_GetUsersByProjectId(t *testing.T) {
 
 func Test_ProjectPermissionsForGroup(t *testing.T) {
 	e := NewEnforcer()
-	userId := "ls"
 	groupId := "g1"
 	projectId := "proj2"
 	permission1 := &models.ProjectPermission{
-		UserId:     userId,
-		GroupId:    groupId,
+		Id:         groupId,
 		ProjectId:  projectId,
 		Permission: utils.ReadOnly,
 	}
@@ -188,8 +186,7 @@ func Test_ProjectPermissionsForGroup(t *testing.T) {
 	fmt.Println(res)
 
 	permission2 := &models.ProjectPermission{
-		UserId:     userId,
-		GroupId:    groupId,
+		Id:         groupId,
 		ProjectId:  projectId,
 		Permission: utils.Config,
 	}
@@ -213,7 +210,7 @@ func Test_EnvironmentPermissionsForUser(t *testing.T) {
 	userId := "zs"
 	environmentId1 := "sit"
 	permission1 := &models.EnvironmentPermission{
-		UserId:        userId,
+		Id:            userId,
 		EnvironmentId: environmentId1,
 		Permission:    utils.Execute,
 	}
@@ -222,7 +219,7 @@ func Test_EnvironmentPermissionsForUser(t *testing.T) {
 
 	environmentId2 := "uat"
 	permission2 := &models.EnvironmentPermission{
-		UserId:        userId,
+		Id:            userId,
 		EnvironmentId: environmentId2,
 		Permission:    utils.Execute,
 	}
@@ -246,7 +243,7 @@ func Test_EnvironmentPermissionsForGroup(t *testing.T) {
 	groupId := "g2"
 	environmentId1 := "sit"
 	permission1 := &models.EnvironmentPermission{
-		GroupId:       groupId,
+		Id:            groupId,
 		EnvironmentId: environmentId1,
 		Permission:    utils.Execute,
 	}
@@ -255,7 +252,7 @@ func Test_EnvironmentPermissionsForGroup(t *testing.T) {
 
 	environmentId2 := "uat"
 	permission2 := &models.EnvironmentPermission{
-		GroupId:       groupId,
+		Id:            groupId,
 		EnvironmentId: environmentId2,
 		Permission:    utils.Execute,
 	}

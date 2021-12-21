@@ -25,11 +25,11 @@ func GetRoleForUser(userId string, enforcer *casbin.Enforcer) ([]string, error) 
 }
 
 func AddProjectPermissionForUser(permission *models.ProjectPermission, enforcer *casbin.Enforcer) (bool, error) {
-	return enforcer.AddPolicy(permission.UserId, permission.ProjectId, permission.Permission)
+	return enforcer.AddPolicy(permission.Id, permission.ProjectId, permission.Permission)
 }
 
 func DeleteProjectPermissionForUser(permission *models.ProjectPermission, enforcer *casbin.Enforcer) (bool, error) {
-	return enforcer.RemovePolicy(permission.UserId, permission.ProjectId, permission.Permission)
+	return enforcer.RemovePolicy(permission.Id, permission.ProjectId, permission.Permission)
 }
 
 func GetProjectIdsForUser(userId string, enforcer *casbin.Enforcer) mapset.Set {
@@ -55,11 +55,11 @@ func GetUserIdsForProject(projectId string, enforcer *casbin.Enforcer) mapset.Se
 }
 
 func AddProjectPermissionForGroup(permission *models.ProjectPermission, enforcer *casbin.Enforcer) (bool, error) {
-	return enforcer.AddGroupingPolicy(permission.GroupId, permission.ProjectId, permission.Permission)
+	return enforcer.AddGroupingPolicy(permission.Id, permission.ProjectId, permission.Permission)
 }
 
 func DeleteProjectPermissionForGroup(permission *models.ProjectPermission, enforcer *casbin.Enforcer) (bool, error) {
-	return enforcer.RemoveGroupingPolicy(permission.GroupId, permission.ProjectId, permission.Permission)
+	return enforcer.RemoveGroupingPolicy(permission.Id, permission.ProjectId, permission.Permission)
 }
 
 func GetAllProjectPermissionsForGroup(groupId string, enforcer *casbin.Enforcer) [][]string {
@@ -67,11 +67,11 @@ func GetAllProjectPermissionsForGroup(groupId string, enforcer *casbin.Enforcer)
 }
 
 func AddEnvironmentPermissionForUser(permission *models.EnvironmentPermission, enforcer *casbin.Enforcer) (bool, error) {
-	return enforcer.AddPolicy(permission.UserId, permission.EnvironmentId, permission.Permission)
+	return enforcer.AddPolicy(permission.Id, permission.EnvironmentId, permission.Permission)
 }
 
 func DeleteEnvironmentPermissionForUser(permission *models.EnvironmentPermission, enforcer *casbin.Enforcer) (bool, error) {
-	return enforcer.RemovePolicy(permission.UserId, permission.EnvironmentId, permission.Permission)
+	return enforcer.RemovePolicy(permission.Id, permission.EnvironmentId, permission.Permission)
 }
 
 func GetAllEnvironmentPermissionsForUser(userId string, enforcer *casbin.Enforcer) [][]string {
@@ -79,13 +79,61 @@ func GetAllEnvironmentPermissionsForUser(userId string, enforcer *casbin.Enforce
 }
 
 func AddEnvironmentPermissionForGroup(permission *models.EnvironmentPermission, enforcer *casbin.Enforcer) (bool, error) {
-	return enforcer.AddPolicy(permission.GroupId, permission.EnvironmentId, permission.Permission)
+	return enforcer.AddPolicy(permission.Id, permission.EnvironmentId, permission.Permission)
 }
 
 func DeleteEnvironmentPermissionForGroup(permission *models.EnvironmentPermission, enforcer *casbin.Enforcer) (bool, error) {
-	return enforcer.RemovePolicy(permission.GroupId, permission.EnvironmentId, permission.Permission)
+	return enforcer.RemovePolicy(permission.Id, permission.EnvironmentId, permission.Permission)
 }
 
 func GetAllEnvironmentPermissionsForGroup(groupId string, enforcer *casbin.Enforcer) [][]string {
 	return enforcer.GetFilteredPolicy(0, groupId)
+}
+
+func AddConfigurationPermissionForUser(permission *models.ConfigurationPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.AddPolicy(permission.Id, permission.ConfigurationId, permission.Permission)
+}
+
+func DeleteConfigurationPermissionForUser(permission *models.ConfigurationPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.RemovePolicy(permission.Id, permission.ConfigurationId, permission.Permission)
+}
+
+func GetAllConfigurationPermissionsForUser(userId string, enforcer *casbin.Enforcer) [][]string {
+	return enforcer.GetFilteredPolicy(0, userId)
+}
+
+func AddConfigurationPermissionForGroup(permission *models.ConfigurationPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.AddGroupingPolicy(permission.Id, permission.ConfigurationId, permission.Permission)
+}
+
+func DeleteConfigurationPermissionForGroup(permission *models.ConfigurationPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.RemoveGroupingPolicy(permission.Id, permission.ConfigurationId, permission.Permission)
+}
+
+func GetAllConfigurationPermissionsForGroup(groupId string, enforcer *casbin.Enforcer) [][]string {
+	return enforcer.GetFilteredGroupingPolicy(0, groupId)
+}
+
+func AddSecretPermissionForUser(permission *models.SecretPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.AddPolicy(permission.Id, permission.SecretId, permission.Permission)
+}
+
+func DeleteSecretPermissionForUser(permission *models.SecretPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.RemovePolicy(permission.Id, permission.SecretId, permission.Permission)
+}
+
+func GetAllSecretPermissionsForUser(userId string, enforcer *casbin.Enforcer) [][]string {
+	return enforcer.GetFilteredPolicy(0, userId)
+}
+
+func AddSecretPermissionForGroup(permission *models.SecretPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.AddGroupingPolicy(permission.Id, permission.SecretId, permission.Permission)
+}
+
+func DeleteSecretPermissionForGroup(permission *models.SecretPermission, enforcer *casbin.Enforcer) (bool, error) {
+	return enforcer.RemoveGroupingPolicy(permission.Id, permission.SecretId, permission.Permission)
+}
+
+func GetAllSecretPermissionsForGroup(groupId string, enforcer *casbin.Enforcer) [][]string {
+	return enforcer.GetFilteredGroupingPolicy(0, groupId)
 }
